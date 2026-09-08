@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="660" viewBox="0 0 1100 660" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif">
+  <rect width="1100" height="660" fill="#ffffff"/>
+
+  <text x="30" y="36" font-size="19" font-weight="700" fill="#111827">Zep / Graphiti 记忆架构示意（自绘，原论文无图）</text>
+  <text x="30" y="58" font-size="13" fill="#6b7280">依据 arXiv:2501.13956 §2 三层子图 + 双时态边失效 + §2.3 检索函数 f(α)=χ(ρ(φ(α))) 绘制</text>
+
+  <!-- ============ 三层子图 ============ -->
+  <text x="30" y="92" font-size="14" font-weight="600" fill="#1f2937">① 三层子图（自下而上抽取）</text>
+
+  <g>
+    <rect x="30" y="106" width="280" height="118" rx="8" fill="#eef2ff" stroke="#6366f1" stroke-width="1.5"/>
+    <text x="46" y="130" font-size="14" font-weight="700" fill="#3730a3">情节子图 Ge</text>
+    <text x="46" y="152" font-size="12.5" fill="#374151">· 原始消息 / 文本 / JSON</text>
+    <text x="46" y="172" font-size="12.5" fill="#374151">· 非损存储（抽取原料）</text>
+    <text x="46" y="192" font-size="12.5" fill="#374151">· 参考时间戳 t_ref</text>
+    <text x="46" y="212" font-size="12" fill="#6b7280">用于解析"下周四""两周前"</text>
+  </g>
+
+  <g>
+    <rect x="350" y="106" width="280" height="118" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+    <text x="366" y="130" font-size="14" font-weight="700" fill="#14532d">语义实体子图 Gs</text>
+    <text x="366" y="152" font-size="12.5" fill="#374151">· 实体节点（1024 维嵌入）</text>
+    <text x="366" y="172" font-size="12.5" fill="#374151">· 事实边（三元组，超边）</text>
+    <text x="366" y="192" font-size="12.5" fill="#374151">· LLM 实体消解 + 去重</text>
+    <text x="366" y="212" font-size="12" fill="#6b7280">写入用预定义 Cypher</text>
+  </g>
+
+  <g>
+    <rect x="670" y="106" width="280" height="118" rx="8" fill="#fff7ed" stroke="#ea580c" stroke-width="1.5"/>
+    <text x="686" y="130" font-size="14" font-weight="700" fill="#7c2d12">社群子图 Gc</text>
+    <text x="686" y="152" font-size="12.5" fill="#374151">· 实体聚类 + 高层摘要</text>
+    <text x="686" y="172" font-size="12.5" fill="#374151">· 标签传播（非 Leiden）</text>
+    <text x="686" y="192" font-size="12.5" fill="#374151">· 单步动态扩展</text>
+    <text x="686" y="212" font-size="12" fill="#6b7280">代价：社群漂移，需周期重建</text>
+  </g>
+
+  <g stroke="#9ca3af" stroke-width="1.6" fill="none">
+    <path d="M316 165 H342" marker-end="url(#ar)"/>
+    <path d="M636 165 H662" marker-end="url(#ar)"/>
+  </g>
+  <defs>
+    <marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#9ca3af"/>
+    </marker>
+  </defs>
+
+  <!-- ============ 双时态边失效 ============ -->
+  <text x="30" y="272" font-size="14" font-weight="600" fill="#1f2937">② 双时态边失效：只失效、不删除</text>
+
+  <rect x="30" y="286" width="1040" height="180" rx="8" fill="#fafafa" stroke="#d1d5db" stroke-width="1"/>
+
+  <!-- 时间轴 -->
+  <line x1="90" y1="432" x2="1040" y2="432" stroke="#374151" stroke-width="1.5"/>
+  <text x="1046" y="437" font-size="12" fill="#374151">时间 T</text>
+  <g font-size="12" fill="#6b7280" text-anchor="middle">
+    <text x="150" y="450">T1</text>
+    <text x="300" y="450">T2</text>
+    <text x="450" y="450">T3</text>
+    <text x="650" y="450">T4</text>
+    <text x="840" y="450">现在</text>
+  </g>
+  <g stroke="#d1d5db" stroke-width="1">
+    <line x1="150" y1="428" x2="150" y2="436"/>
+    <line x1="450" y1="428" x2="450" y2="436"/>
+    <line x1="650" y1="428" x2="650" y2="436"/>
+  </g>
+
+  <!-- 旧边 bar -->
+  <rect x="130" y="330" width="320" height="26" rx="4" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.3"/>
+  <text x="140" y="348" font-size="12.5" fill="#1e3a8a">旧边：Klaus 任职于 A 公司</text>
+  <line x1="450" y1="322" x2="450" y2="364" stroke="#dc2626" stroke-width="1.6" stroke-dasharray="4 3"/>
+  <rect x="450" y="330" width="120" height="26" rx="4" fill="none" stroke="#2563eb" stroke-width="1.1" stroke-dasharray="4 3"/>
+  <text x="458" y="348" font-size="11.5" fill="#93c5fd">（已失效，保留）</text>
+  <!-- 旧边标注 -->
+  <text x="130" y="322" font-size="11.5" fill="#2563eb">t_valid = T1</text>
+  <text x="420" y="322" font-size="11.5" fill="#dc2626" text-anchor="end">t_invalid := T3</text>
+
+  <!-- 新边 bar -->
+  <rect x="450" y="378" width="570" height="26" rx="4" fill="#bbf7d0" stroke="#16a34a" stroke-width="1.3"/>
+  <text x="460" y="396" font-size="12.5" fill="#14532d">新边：Klaus 任职于 B 公司（t_valid = T3）</text>
+
+  <!-- 触发说明 -->
+  <text x="720" y="322" font-size="12" fill="#374151">LLM 比对语义相关旧边 → 发现时间重叠矛盾</text>
+
+  <!-- 四个时间戳 -->
+  <g font-size="11.5" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">
+    <rect x="700" y="296" width="108" height="22" rx="4" fill="#dbeafe" stroke="#3b82f6"/>
+    <text x="754" y="311" text-anchor="middle" fill="#1e40af">t_valid</text>
+    <rect x="814" y="296" width="108" height="22" rx="4" fill="#fee2e2" stroke="#ef4444"/>
+    <text x="868" y="311" text-anchor="middle" fill="#991b1b">t_invalid</text>
+  </g>
+  <text x="700" y="288" font-size="11" fill="#6b7280">事件时间线 T（真实世界何时成立）</text>
+
+  <!-- ============ 检索 ============ -->
+  <text x="30" y="508" font-size="14" font-weight="600" fill="#1f2937">③ 检索 f(α) = χ( ρ( φ(α) ) )</text>
+
+  <g>
+    <rect x="30" y="524" width="290" height="112" rx="8" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
+    <text x="46" y="548" font-size="14" font-weight="700" fill="#4c1d95">φ 搜索（三路并行）</text>
+    <text x="46" y="570" font-size="12.5" fill="#374151">· 余弦语义相似度</text>
+    <text x="46" y="590" font-size="12.5" fill="#374151">· BM25 全文检索</text>
+    <text x="46" y="610" font-size="12.5" fill="#374151">· 图上 BFS（可种子化）</text>
+    <text x="46" y="630" font-size="11.5" fill="#6b7280">种子 = 最近的情节节点</text>
+  </g>
+
+  <g>
+    <rect x="345" y="524" width="290" height="112" rx="8" fill="#ecfeff" stroke="#0891b2" stroke-width="1.5"/>
+    <text x="361" y="548" font-size="14" font-weight="700" fill="#155e75">ρ 重排序</text>
+    <text x="361" y="570" font-size="12.5" fill="#374151">· RRF / MMR</text>
+    <text x="361" y="590" font-size="12.5" fill="#374151">· 情节提及频次 / 节点距离</text>
+    <text x="361" y="610" font-size="12.5" fill="#374151">· cross-encoder（最贵）</text>
+  </g>
+
+  <g>
+    <rect x="820" y="524" width="270" height="112" rx="8" fill="#fefce8" stroke="#ca8a04" stroke-width="1.5"/>
+    <text x="836" y="548" font-size="14" font-weight="700" fill="#713f12">χ 构造器</text>
+    <text x="836" y="570" font-size="12.5" fill="#374151">· 事实 + valid_at–invalid_at</text>
+    <text x="836" y="590" font-size="12.5" fill="#374151">· 实体 name + summary</text>
+    <text x="836" y="610" font-size="12.5" fill="#374151">· 社群 summary</text>
+  </g>
+
+  <g stroke="#9ca3af" stroke-width="1.6" fill="none">
+    <path d="M326 580 H337" marker-end="url(#ar2)"/>
+    <path d="M641 580 H812" marker-end="url(#ar2)"/>
+  </g>
+  <defs>
+    <marker id="ar2" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#9ca3af"/>
+    </marker>
+  </defs>
+
+  <text x="30" y="654" font-size="11.5" fill="#9ca3af">自绘示意图 · 非论文原图 · Zep 论文 12 页 3 表、无任何图形 figure</text>
+</svg>
