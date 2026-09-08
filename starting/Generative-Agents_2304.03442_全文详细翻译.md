@@ -14,7 +14,13 @@
 
 **翻译说明**：本文基于 arXiv v2 全文（ar5iv HTML 版）逐段忠实翻译。引用标记（如 [Card et al. 1983]）、人物名、地名（Smallville、Hobbs Cafe 等）、提示词（prompt）原文均保留原样；提示词与智能体对话以引用块呈现，保留英文原文并附中文对照。论文中第 8–9 节的逐字原文因全文源通道限制未获取到，已在文末如实标注。
 
+**插图**：已按原论文 HTML 版本抽取全部插图，存放于同目录 `images/GenerativeAgents/`，插入位置与原文对应（原图 URL 见图片上方的 HTML 注释）。
+
 ---
+
+<!-- 原图：https://arxiv.org/html/2304.03442v2/figures/figure_cover4.png -->
+![图 1：生成式智能体——交互式应用中人类行为的可信拟像](images/GenerativeAgents/01-cover.png)
+
 
 ## 摘要
 
@@ -125,6 +131,9 @@ Smallville 中居住着一个由 25 个独特智能体组成的社区。每个�
 ### 3.2 环境交互
 
 Smallville 具备一个小村庄的常见场所，包括咖啡馆、酒吧、公园、学校、宿舍、住宅和商店。它还定义了让这些空间具备功能的子区域与物件，例如房子里的厨房、厨房里的炉子（图 2）。所有作为智能体主要居住空间的地方都配有床、书桌、衣柜、架子，以及浴室和厨房。⁴
+<!-- 原图：https://arxiv.org/html/2304.03442v2/figures/figure_map5.png -->
+![图 2：Smallville 沙盒世界地图（区域标注）](images/GenerativeAgents/02-smallville_map.png)
+
 
 > ⁴ 这个环境设计并非我们工作的重点，因此我们手动生成了这个环境，而非自动生成。未来的工作可以继续扩展智能体环境的丰富度。
 
@@ -137,6 +146,9 @@ Smallville 具备一个小村庄的常见场所，包括咖啡馆、酒吧、公
 从单段描述出发，生成式智能体开始规划它们的一天。随着沙盒世界中时间的流逝，它们的行为随着彼此及世界的交互而演化，积累记忆与关系，并协调联合活动。
 
 我们通过追踪系统输出在一天之中对智能体 John Lin 的呈现，来展示生成式智能体的行为（图 3）。在 Lin 一家中，John 是早上 7 点第一个起床的人。他刷牙、洗澡、穿衣服、吃早餐，并在客厅的餐桌上查看新闻。8 点，Eddy 紧随其后，从床上冲起来准备上课。他在 John 正要出门时赶上了他：
+<!-- 原图：https://arxiv.org/html/2304.03442v2/figures/figure_daily_routine3.png -->
+![图 3：生成式智能体 John Lin 的一个早晨](images/GenerativeAgents/03-daily_routine.png)
+
 
 > John: Good morning Eddy. Did you sleep well?
 > Eddy: Good morning dad. Yeah, I slept great.
@@ -193,16 +205,26 @@ Smallville 中的智能体随时间形成新的关系，并记住它们与其他
 生成式智能体会相互协调。Isabella Rodriguez 在 Hobbs Cafe，她在初始化时被赋予一个意图：策划一场 2 月 14 日下午 5 点到 7 点的情人节派对。从这颗种子出发，当她在 Hobbs Cafe 或其他地方见到朋友和顾客时，她就会去邀请他们。随后 Isabella 用 13 号下午的时间为这个场合装饰咖啡馆。Maria 是咖啡馆的常客，也是 Isabella 的密友，她来到咖啡馆，Isabella 请 Maria 帮忙装饰派对，Maria 答应了。Maria 的角色描述提到她暗恋 Klaus。那天晚上，Maria 邀请她的暗恋对象 Klaus 一起去派对，他欣然接受。
 
 情人节那天，包括 Klaus 和 Maria 在内的五名智能体在下午 5 点出现在 Hobbs Cafe，享受着庆祝活动（图 4）。在这个场景中，终端用户只设置了 Isabella 办派对的初始意图，以及 Maria 暗恋 Klaus 这一点：传播消息、装饰、互相邀约、到场参加派对、在派对上相互交谈——这些群体行为都是由智能体架构自行发起的。
+<!-- 原图：https://arxiv.org/html/2304.03442v2/figures/figure_valentine3.png -->
+![图 4：情人节派对——由单个初始意图涌现出的群体行为](images/GenerativeAgents/04-valentine_party.png)
+
 
 ---
 
 ## 4. 生成式智能体架构
+<!-- 原图：https://arxiv.org/html/2304.03442v2/figures/figure_architecture2.png -->
+![图 5：生成式智能体架构（感知 → 记忆流 → 检索 → 反思 → 规划 → 行动）](images/GenerativeAgents/05-architecture.png)
+
 
 生成式智能体旨在为开放世界中的行为提供一个框架：既能与其他智能体交互，又能对环境变化做出反应。生成式智能体以当前环境和过往经验为输入，以行为为输出。支撑这一行为的是一种新颖的智能体架构，它把大语言模型与"合成并检索相关信息以调节语言模型输出"的机制结合起来。如果没有这些机制，大语言模型当然也能输出行为，但由此产生的智能体可能无法基于自身过往经验做出反应、可能无法做出重要推断、也可能无法维持长期连贯性。长期规划与连贯性的挑战至今依然存在（[Bubeck et al. 2023]），即便是在当今最强的模型（如 GPT-4）上也是如此。由于生成式智能体会产生大量必须留存下来的事件流和记忆，我们架构的一个核心挑战是：**确保在需要时，智能体记忆中最相关的片段能够被检索与合成出来。**
 
 我们架构的核心是**记忆流**（memory stream）——一个维护智能体经验完整记录的数据库。从记忆流中检索出相关的记录，用以规划智能体的行动并对环境做出恰当反应。记录会被递归地合成为越来越高层次的**反思**，进而指导行为。架构中的一切都以自然语言描述的形式被记录和推理，从而使架构能够充分利用大语言模型。
 
 我们当前的实现使用 ChatGPT 的 gpt3.5-turbo 版本（[OpenAI 2022]）。我们预计，随着语言模型的进步，生成式智能体的架构基础——记忆、规划与反思——很可能保持不变。更新的语言模型（如 GPT-4）将继续拓展支撑生成式智能体的提示语的表达能力与性能。不过在撰写本文时，GPT-4 的 API 仅对受邀者开放，因此我们的智能体使用 ChatGPT。
+
+<!-- 原图：https://arxiv.org/html/2304.03442v2/figures/figure_retrieval2.png -->
+![图 6：记忆流与检索机制](images/GenerativeAgents/06-memory_retrieval.png)
+
 
 > 图 6：记忆流包含大量与智能体当前情境相关与不相关的观察。检索会识别出其中应被传递给语言模型、以调节其对情境响应的一个子集。左侧是一大串事件，如"冰箱处于空闲状态"；右侧是问题"What are you looking forward to the most right now?"（你现在最期待什么？），随后是检索计算——它给"为派对订购装饰品"和"研究派对创意"打出高分。基于这些记忆，Isabella 回答道："I'm looking forward to the Valentine's Day party that I'm planning at Hobbs Cafe!"（我期待我正在 Hobbs Cafe 策划的情人节派对！）
 
@@ -235,6 +257,10 @@ score = α_recency · recency + α_importance · importance + α_relevance · re
 在我们的实现中，所有 α 都设为 1。排名最高、且能够装进语言模型上下文窗口的记忆，会被纳入提示词。
 
 ### 4.2 反思
+
+<!-- 原图：https://arxiv.org/html/2304.03442v2/figures/figure_reflection6.png -->
+![图 7：Klaus Mueller 的反思树](images/GenerativeAgents/07-reflection_tree.png)
+
 
 > 图 7：Klaus Mueller 的反思树。智能体对世界的观察（以叶节点表示）被递归地合成，推导出 Klaus 的自我认知——他极度投入于自己的研究。
 
@@ -395,6 +421,10 @@ Smallville 沙盒游戏环境使用 Phaser 网页游戏开发框架构建（[Lab
 
 此外，第一作者进行了一项归纳分析（[Thomas 2006]），以研究各条件所产生回答之间的质性差异。我们分两个阶段采用质性开放编码（[Flick 2009]）：第一阶段生成在句子层面紧密表征所生成回答的编码；第二阶段综合第一阶段得到的编码，提取更高层次的主题。我们利用这些主题来比较本研究中产生的回答类型。
 
+<!-- 原图：https://arxiv.org/html/2304.03442v2/figures/figure_rank_score_comparison4.png -->
+![图 8：完整架构 vs 各消融条件的行为可信度对比](images/GenerativeAgents/08-believability_ranking.png)
+
+
 > 图 8：完整的生成式智能体架构比各消融架构和人类众包工作者产生了更可信的行为。每多做一次消融，架构的性能就下降一次。（TrueSkill μ 分数柱状图，完整架构优于其他条件。）
 
 ### 6.5 结果
@@ -418,6 +448,10 @@ Kruskal-Wallis 检验确认了各条件之间排序差异的整体统计显著�
 #### 6.5.3 综合需要反思
 
 在做出需要对其经验进行更深层次综合的决策时，反思是生成式智能体的一项优势。例如，当被问到她可能会给 Wolfgang Schulz 买什么生日礼物时，无法访问反思的 Maria Lopez 承认了自己的不确定，说她不知道 Wolfgang 喜欢什么——尽管她与 Wolfgang 有过许多次交互。然而，在能够访问反思记忆的情况下，Maria 自信地回答："Since he's interested in mathematical music composition, I could get him something related to that. Maybe some books about music composition or something related, or maybe some special software he could use for that."（既然他对数学化的音乐作曲感兴趣，我可以给他买点相关的东西。也许是一些关于音乐作曲的书或类似的东西，或者一些他可以用得上的特殊软件。）
+
+<!-- 原图：https://arxiv.org/html/2304.03442v2/figures/figure_info_diff2.png -->
+![图 9：情人节派对邀请的信息扩散路径](images/GenerativeAgents/09-info_diffusion.png)
+
 
 > 图 9：Isabella Rodriguez 的情人节派对邀请的扩散路径总共涉及除 Isabella 之外的 12 个智能体——到模拟结束时，他们都在 Hobbs Cafe 听说了这场派对。
 

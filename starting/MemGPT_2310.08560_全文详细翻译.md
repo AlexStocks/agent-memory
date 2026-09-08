@@ -12,6 +12,8 @@
 
 **翻译说明**：本文基于 arXiv v2 全文（ar5iv HTML 版）逐段忠实翻译。引用标记（如 [Vaswani et al. 2017]）、技术术语（main context、external context、function chaining 等）、提示词原文均保留原样；提示词以引用块呈现，保留英文原文并附中文对照。表格数据按原文数值照录。若某处渲染缺失已在脚注标明。
 
+**插图**：已按原论文 HTML 版本抽取全部插图，存放于同目录 `images/MemGPT/`，插入位置与原文对应（原图 URL 见图片上方的 HTML 注释）。
+
 ---
 
 ## 摘要
@@ -32,11 +34,20 @@
 
 在 MemGPT 中，我们把上下文窗口视为一种受限的内存资源，并为 LLM 设计了一套**存储层级**（memory hierarchy），类比于传统操作系统中使用的存储分层（[Patterson et al. 1988]）。传统操作系统中的应用程序与虚拟内存交互：操作系统把溢出的数据换页到磁盘，并在应用程序访问时（通过缺页异常，page fault）把数据取回内存，从而营造出"内存资源比物理（即主）内存实际可用量更多"的假象。为了提供类似的"更长上下文"的假象（类比于虚拟内存），我们让 LLM 通过一个我们称之为 MemGPT 的 **"LLM 操作系统"** 来管理放入自身上下文（类比于物理内存）中的内容。MemGPT 使 LLM 能够检索当前上下文中缺失的相关历史数据，也能把相关性较低的数据从上下文中驱逐到外部存储系统中。图 3 展示了 MemGPT 的各个组件。
 
+<!-- 原图：https://arxiv.org/html/2310.08560v2/memgpt_diagrams_wide_memory_creation.png -->
+![图 1：MemGPT 收到上下文不足告警后写入持久化内存](images/MemGPT/01-memory_creation.png)
+
 > **图 1**：MemGPT（左）在收到关于上下文空间不足的系统告警后，把数据写入持久化内存。
 
 存储层级、操作系统函数以及基于事件的控制流这三者结合使用，使 MemGPT 能够用具有有限上下文窗口的 LLM 来处理**无界上下文**。为了展示我们这个受操作系统启发的新 LLM 系统的实用性，我们在两个领域中评估 MemGPT——在这些领域中，现有 LLM 的性能受到有限上下文的严重制约：**文档分析**（标准文本文件的长度会迅速超出现代 LLM 的输入容量）与**对话智能体**（受限于有限对话窗口的 LLM 在长对话中缺乏上下文感知、人设一致性与长期记忆）。在这两种场景中，MemGPT 都能够克服有限上下文的局限，超越现有的基于 LLM 的方法。
 
+<!-- 原图：https://arxiv.org/html/2310.08560v2/memgpt_diagrams_wide_memory_search.png -->
+![图 2：MemGPT 检索上下文外数据并带入上下文窗口](images/MemGPT/02-memory_search.png)
+
 > **图 2**：MemGPT（左）可以搜索上下文之外的数据，把相关信息带入当前上下文窗口。
+
+<!-- 原图：https://arxiv.org/html/2310.08560v2/memgpt_system_flow_2.svg -->
+![图 3：MemGPT 的分层存储系统与函数（系统总览）](images/MemGPT/03-system_flow.svg)
 
 > **图 3**：在 MemGPT 中，一个固定上下文的 LLM 处理器（processor）被增强了分层存储系统，以及使其能够管理自身内存的函数。LLM 的 prompt token（输入），即**主上下文**（main context），由系统指令、工作上下文（working context）和一个 FIFO 队列组成。LLM 的 completion token（输出）被函数执行器解释为函数调用。MemGPT 使用函数在主上下文与**外部上下文**（external context，即归档存储与召回存储数据库）之间搬运数据。LLM 可以通过在输出中生成一个特殊关键字参数（`request_heartbeat=true`）来请求立即进行后续的 LLM 推理，从而把函数调用**链接**起来；函数链正是 MemGPT 能够执行多步检索来回答用户查询的原因。
 
@@ -155,18 +166,33 @@ MemGPT 通过由 LLM 处理器生成的函数调用，编排主上下文与外�
 
 **MemGPT 利用记忆提升吸引力：** 如表 3 所示，MemGPT 能够构思出与人类手写开场白表现相当、偶尔甚至超越的有吸引力的开场白。我们观察到，MemGPT 倾向于构思**更冗长**、且比人类基线**覆盖更多角色信息维度**的开场白。此外，我们可以看到，**把信息存入工作上下文**是生成有吸引力开场白的关键。
 
+<!-- 原图：https://arxiv.org/html/2310.08560v2/memgpt_diagrams_wide_memory_correction.png -->
+![图 4：MemGPT 更新已存储信息的对话片段](images/MemGPT/04-memory_correction.png)
+
 > **图 4**：一段 MemGPT（左）更新已存储信息的对话示例。此处信息被存储在工作上下文内存中（位于 prompt token 之内）。
 
 ### 3.2 MemGPT 用于文档分析
 
 由于当今 Transformer 模型有限的上下文窗口，文档分析同样面临挑战。如表 1 所示，开源与闭源模型都受限于上下文长度（OpenAI 模型最高 128k token）。然而许多文档轻易就能超过这些长度；例如，法律或金融文档——如年度报告（SEC Form 10-K）——可以轻易突破百万 token 大关。此外，许多真实的文档分析任务需要**跨多个此类长文档建立联系**。预见这些场景后，很难再把"盲目扩大上下文"设想为固定上下文问题的解决方案。近期研究（[Liu et al. 2023a]）也对单纯扩展上下文的效用提出了质疑，因为他们发现大上下文模型中存在**不均匀的注意力分布**（模型对位于上下文窗口开头或结尾的信息回忆能力更强，而对中间 token 则较弱）。为了支持跨文档推理，我们需要像 MemGPT 这样**更灵活的存储架构**。
 
+<!-- 原图：https://arxiv.org/html/2310.08560v2/docqa.svg -->
+![图 5：文档问答任务性能](images/MemGPT/05-docqa_performance.svg)
+
 > **图 5**：文档问答任务性能。MemGPT 的性能不受上下文长度增加的影响。诸如截断（truncation）之类的方法可以扩展 GPT-4 这类固定长度模型的有效上下文长度，但随着所需压缩率的提高，这类压缩方法会导致性能退化。使用 GPT-4 与 GPT-4 Turbo 运行 MemGPT 在该任务上结果相当。
 >
+<!-- 原图：https://arxiv.org/html/2310.08560v2/memgpt_docqa_example_2.svg -->
+![图 6：MemGPT 解文档问答任务的示例](images/MemGPT/06-docqa_example.svg)
+
 > **图 6**：MemGPT（左）解决文档问答任务的一个示例。一个维基百科文档数据库被上传到归档存储。MemGPT 通过函数调用查询归档存储，把**分页**的搜索结果拉入主上下文。
 >
+<!-- 原图：https://arxiv.org/html/2310.08560v2/nested_kv.svg -->
+![图 7：嵌套 KV 检索任务性能](images/MemGPT/07-nested_kv_performance.svg)
+
 > **图 7**：嵌套 KV 检索任务性能。MemGPT 是唯一能够持续完成超过 2 层嵌套的 KV 任务的方法。虽然 GPT-4 Turbo 作为基线表现更好，但 MemGPT 搭配 GPT-4 Turbo 的表现**反而差于** MemGPT 搭配 GPT-4。
 >
+<!-- 原图：https://arxiv.org/html/2310.08560v2/memgpt_nested_kv_example.svg -->
+![图 8：MemGPT 解嵌套 KV 任务的示例](images/MemGPT/08-nested_kv_example.svg)
+
 > **图 8**：MemGPT（左）解决嵌套 KV 任务的一个示例（为可读性，UUID 已缩短）。在这个具体例子中，键值对有两层嵌套：831..ea5 → 5b8..4c3 → f37...617。当对最终值（f37...617）的查询只返回一个结果、表明它不再同时是一个键时，MemGPT 智能体就会返回最终答案。
 
 #### 3.2.1 多文档问答

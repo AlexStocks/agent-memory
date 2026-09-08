@@ -6,13 +6,17 @@
 
 算是 agent memory 的"奠基性框架之作”。整个领域现在通用的记忆词汇表就出自这篇：**working / episodic / semantic / procedural** 四类记忆 + action space + 决策循环。先读它，后面所有系统你都能归位（PC 的 Memory≈semantic、Handoff≈episodic、Skill/Experience≈procedural）。
 
-文章原文在 https://arxiv.org/abs/2309.02427 ，AI 翻译的中文版  https://github.com/AlexStocks/agent-memroy/blob/main/starting/CoALA_%E5%85%A8%E6%96%87%E8%AF%A6%E7%BB%86%E7%BF%BB%E8%AF%91.md 。
+文章原文在 https://arxiv.org/abs/2309.02427 ，AI 翻译的中文版  https://github.com/AlexStocks/agent-memory/blob/main/starting/CoALA_%E5%85%A8%E6%96%87%E8%AF%A6%E7%BB%86%E7%BF%BB%E8%AF%91.md 。
+
+![图 4：语言智能体的认知架构（CoALA）——记忆模块在决策循环中的位置](images/CoALA/04-coala_architecture.png)
 
 2. **A Survey on the Memory Mechanism of LLM based Agents**（arXiv:2404.13501）
    
 该领域**第一篇系统性综述**：记忆分类、读写机制、评估基准（LoCoMo/LongMemEval/DMR）一次讲清，适合当"地图"反复翻。
 
-原文在 https://arxiv.org/abs/2404.13501 ，AI 翻译的中文版 https://github.com/AlexStocks/agent-memroy/blob/main/starting/LLM-Agent-Memory-Survey-2404.13501-%E5%85%A8%E6%96%87%E4%B8%AD%E6%96%87%E7%BF%BB%E8%AF%91.md 。
+原文在 https://arxiv.org/abs/2404.13501 ，AI 翻译的中文版 https://github.com/AlexStocks/agent-memory/blob/main/starting/LLM-Agent-Memory-Survey-2404.13501-%E5%85%A8%E6%96%87%E4%B8%AD%E6%96%87%E7%BF%BB%E8%AF%91.md 。
+
+![图 4：记忆的来源、形式与操作总览（来源 × 形式 × 操作三维框架）](images/Survey/04-sources_forms_operations.png)
 
 ## 第 1 步 · 三大奠基论文
 
@@ -30,7 +34,7 @@
 
 **一句话定位**：把大语言模型接上"记忆流 + 反思 + 规划"三件套，25 个智能体在《模拟人生》式小镇里自发生活两天——首次证明这三个组件对"行为可信度"有**因果贡献**，而不只是让模型看起来更聪明。
 
-AI 翻译的中文版 https://github.com/AlexStocks/agent-memroy/blob/main/starting/Generative-Agents_2304.03442_%E5%85%A8%E6%96%87%E8%AF%A6%E7%BB%86%E7%BF%BB%E8%AF%91.md 。
+AI 翻译的中文版 https://github.com/AlexStocks/agent-memory/blob/main/starting/Generative-Agents_2304.03442_%E5%85%A8%E6%96%87%E8%AF%A6%E7%BB%86%E7%BF%BB%E8%AF%91.md 。
 
 #### 1.1.1 要解决的核心问题
 
@@ -48,6 +52,8 @@ LLM 能在**单个时间点**生成像人的行为，但一放到长时间跨度
 
 **关键类比**：反思不是"总结"，是**递归抽象**——反思可以对反思再反思，这才是 Maria 能推断出"该送 Wolfgang 音乐作曲相关礼物"的原因（纯观察记忆只会选"见面最多的人"）。
 
+![图 5：生成式智能体架构（感知 → 记忆流 → 检索 → 反思 → 规划 → 行动）](images/GenerativeAgents/05-architecture.png)
+
 ### 1.1.3 实验结果
 
 - **受控评估**（100 名评估者排序，TrueSkill）：完整架构 μ=29.89 > 无反思 26.88 > 无反思无规划 25.64 > **人类众包 22.95** > 完全消融 21.21。与"代表先前工作"的完全消融条件相比 **Cohen's d = 8.16（八个标准差）**，Kruskal-Wallis H(4)=150.29, p<0.001。
@@ -58,7 +64,7 @@ LLM 能在**单个时间点**生成像人的行为，但一放到长时间跨度
 
 **一句话定位**：把操作系统的**虚拟内存分页**搬进 LLM——上下文窗口当主存、外部存储当磁盘，让 LLM **自己**通过函数调用做换页，从而在固定上下文下撑出"无限上下文"的假象。UC Berkeley 出品，项目后更名 Letta。
 
-AI 翻译的中文版 https://github.com/AlexStocks/agent-memroy/blob/main/starting/MemGPT_2310.08560_%E5%85%A8%E6%96%87%E8%AF%A6%E7%BB%86%E7%BF%BB%E8%AF%91.md 。
+AI 翻译的中文版 https://github.com/AlexStocks/agent-memory/blob/main/starting/MemGPT_2310.08560_%E5%85%A8%E6%96%87%E8%AF%A6%E7%BB%86%E7%BF%BB%E8%AF%91.md 。
 
 #### 1.2.1 要解决的核心问题
 
@@ -77,6 +83,8 @@ AI 翻译的中文版 https://github.com/AlexStocks/agent-memroy/blob/main/start
 
 **关键洞见**：内存管理不是"系统替模型做"，而是**交给模型自己做**——编译器式的自动换页换成了"LLM 自己决定什么时候存、存什么、什么时候继续翻页"。这也是它最大的脆弱点（见第 4 点）。
 
+![图 3：MemGPT 的分层存储系统与函数（系统总览）](images/MemGPT/03-system_flow.svg)
+
 #### 1.2.3 实验结果
 
 - **DMR 深度记忆检索（一致性）**：GPT-4 32.1% → **92.5%**；GPT-4 Turbo 35.3% → **93.4%**；GPT-3.5 38.7% → 66.9%（ROUGE-L 同步大涨）。注意基线拿到的是"过去五轮对话的摘要"，MemGPT 拿到的是完整历史但必须自己检索——**差距几乎全部来自"能否把对的记忆换进上下文"**。
@@ -87,12 +95,47 @@ AI 翻译的中文版 https://github.com/AlexStocks/agent-memroy/blob/main/start
 
 ① 性能**强依赖底层模型的函数调用能力**（GPT-3.5 上大幅掉点）；② MemGPT **经常在耗尽检索库之前就停止翻页**——理论上能翻完，实际上不等于会翻完；③ 仍受嵌入检索质量制约。
 
-#### 1.2.5 与 PC 的关联
+#### 1.2.5 高价值部分
 
 - 这是 **2404.13501 综述框架里"文本形式记忆 + 写入/管理/读取"的完整工程实现**：递归摘要 ≈ 管理操作里的"遗忘/合并"，归档/召回双库 ≈ 记忆来源的"跨试验信息 + 外部知识"，分页检索 ≈ 读取操作。
-- 对照 PowerContext 六阶段闭环：**FIFO 队列 + 队列管理器 ≈ Capture/Flush**；**工作上下文 ≈ 常驻的有界召回区**；**归档存储向量检索 ≈ Search**；而 PC 的 **Source 证据链**恰好补上 MemGPT 没有的一环——它把消息无限期存进召回库，但反思/摘要过程**不带引用指针**（Generative Agents 的反思反而带 because of 1,2,8,15）。
-- 对"有界召回"的直接启发：MemGPT 证明了**告警阈值（70%）+ 强制递归摘要**是个可用的工程范式，代价是摘要会丢信息；若换成"摘要保留 source 指针 + 原始消息可回溯"，就是 PC 相对 MemGPT 的差异化价值点。
+- 对"有界召回"的直接启发：MemGPT 证明了**告警阈值（70%）+ 强制递归摘要**是个可用的工程范式，代价是摘要会丢信息。
+- 内存压力告警：prompt token 达 70% → 插入系统告警，让 LLM 主动把重要信息写入工作上下文/归档；达 100% → 驱逐约 50% 消息并生成新的递归摘要
 
+### 1.3 Mem0（LoCoMo 基准上的长期记忆架构，arXiv:2504.19413）
+
+**这是你竞品清单里 mem0 的官方论文**——Mem0 AI 团队，2025-04，在 **LOCOMO** 上跑了 6 类基线的系统对比。
+
+AI 中文翻译版 https://github.com/AlexStocks/agent-memory/blob/main/starting/Mem0_2504.19413_%E5%85%A8%E6%96%87%E8%AF%A6%E7%BB%86%E7%BF%BB%E8%AF%91.md 。
+
+#### 1.3.1 两套架构
+
+| | **Mem0** | **Mem0ᵍ** |
+|---|---|---|
+| 表示 | 自然语言稠密记忆（事实条目） | 有向带标签图：实体节点（类型+嵌入+时间戳）+ 关系三元组边 |
+| 抽取 | 输入 = 对话摘要 S（**异步刷新**）+ 近 m=10 条消息 + 新消息对 → LLM 抽候选事实 | 两阶段：实体抽取器 → 关系生成器 |
+| 更新 | 检索 top s=10 相似记忆 → **LLM 通过 tool call 自选 ADD / UPDATE / DELETE / NOOP**（不用单独分类器） | 相似度阈值判节点复用 → **冲突检测** → LLM 消解器把冲突关系**标记为无效而非物理删除**（保留时间推理能力） |
+| 检索 | 向量相似度 | **双路**：① 实体锚点 + 出入边子图展开；② 查询整体编码 vs 三元组文本编码相似度 |
+| 引擎 | GPT-4o-mini + 稠密向量库 | GPT-4o-mini（function calling）+ **Neo4j** |
+
+![图 2：Mem0 系统架构（抽取阶段 + 更新阶段）](images/Mem0/02-mem0_pipeline.png)
+
+#### 1.3.2 核心结果（LOCOMO，整体 J 分数）
+
+- **Mem0ᵍ 68.44** > Mem0 66.88 > Zep 65.99 > LangMem 58.10 > OpenAI 52.90 > A-Mem 48.38 > 最佳 RAG 约 61
+- **全上下文 72.90 最高，但 p95 总延迟 17.1 秒**；Mem0 只 **1.44 秒（−91%）**，搜索 p50 **0.148s** 全场最低
+- 分类别：Mem0 强在**单跳 67.13 / 多跳 51.15**；Mem0ᵍ 强在**时序 58.13（全场最高）/ 开放域 75.71**（开放域仍略逊 Zep 76.60）
+
+#### 1.3.3 最值得记住的三个反直觉结论
+
+1. **图记忆在多跳上反而拖后腿**（Mem0ᵍ 47.19 < Mem0 51.15）。关系结构只在**时序**任务上真正兑现价值——结构化不是万能，要看任务类型。
+2. **全上下文仍然是准确率天花板**（J 72.90），记忆系统的胜场在**成本而非质量**：p95 从 17s 打到 1.4s。
+3. **Zep 的记忆图烧掉 600k+ token**（是 Mem0 的 85 倍，比原文全文还多 20 倍），且添加记忆后**要等数小时**才能正确检索——异步图构建的运维代价暴露得很彻底；LangMem 搜索 p95 达 59.8s，基本不可用。
+
+#### 1.3.4 与你主线的关联
+
+- **最直接的对照点是"更新阶段的四操作"**：Mem0 让 LLM 自己判 ADD/UPDATE/DELETE/NOOP，且冲突时**标无效而不删除**——这正好是 PowerContext 的 Flush 阶段要回答的问题，也是它**没有 Source 证据链**的短板所在（删/标无效都不可回溯到原始消息）。
+- Mem0 的抽取阶段用"**对话摘要 + 近期消息 + 新消息对**"三重上下文，与 PC 的 Capture/Prepare Context 分层思路同构，可作为有界召回的输入设计参考。
+- 论文对 **MemGPT 的复现结论**也在这张表里：MemGPT 在 LOCOMO 上单跳 J 未报、多跳 9.15 F1、时序 25.52 F1——**明显弱于 A-Mem/Mem0 这一代**，说明"OS 式换页"路线在纯对话记忆场景不如"事实级抽取 + 图"路线。
 
 ## 第 2 步 · 四大开源实现
 
