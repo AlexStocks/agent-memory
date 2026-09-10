@@ -1,0 +1,13 @@
+flowchart LR
+    Conversation["对话"] --> HotPath["Hot path<br/>Agent 主动写"]
+    Conversation --> Background["Background<br/>ReflectionExecutor"]
+    HotPath --> Manager["Memory Manager"]
+    Background --> Manager
+    Manager --> Profile["Profile<br/>当前状态"]
+    Manager --> Collection["Collection<br/>事实集合"]
+    Manager --> Episode["Episode<br/>成功经验"]
+    Manager --> Procedure["Prompt Rule<br/>程序记忆"]
+    Profile --> Retrieval["按 key / 语义 / metadata 读取"]
+    Collection --> Retrieval
+    Episode --> Retrieval
+    Procedure --> Retrieval

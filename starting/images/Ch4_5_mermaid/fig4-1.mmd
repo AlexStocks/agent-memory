@@ -1,0 +1,12 @@
+flowchart LR
+    Instructions["指令与策略"] --> Filter["Scope / ACL / Trust 过滤"]
+    Session["会话状态"] --> Filter
+    Memory["长期记忆"] --> Retrieve["JIT 检索与排序"]
+    Sources["文档与工具结果"] --> Retrieve
+    Filter --> Budget["Token 预算与去重"]
+    Retrieve --> Budget
+    Budget --> Pack["本轮 Context Pack"]
+    Pack --> Model["模型推理与工具调用"]
+    Model --> Trace["轨迹、结果、引用"]
+    Trace --> Candidate["记忆写入候选"]
+    Candidate -->|校验 / 审批| Memory

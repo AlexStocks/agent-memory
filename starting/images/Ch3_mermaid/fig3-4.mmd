@@ -1,0 +1,11 @@
+flowchart TB
+    subgraph Hot["始终或近期可见的 Context"]
+        Blocks["Memory Blocks<br/>persona / human / task"]
+        Recent["Recent Messages"]
+    end
+    Recall[("完整 Message History")] -->|按需召回| Recent
+    Archive[("Archives / Passages / Files")] -->|搜索或打开| Hot
+    Agent["前台 Agent"] -->|自编辑| Blocks
+    Sleep["Sleep-time Agent"] -->|后台整理| Blocks
+    Sleep -->|沉淀资料| Archive
+    Hot --> Model["下一轮模型调用"]

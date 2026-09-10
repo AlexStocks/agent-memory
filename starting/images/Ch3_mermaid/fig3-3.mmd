@@ -1,0 +1,10 @@
+flowchart LR
+    Episode["Episode<br/>message / text / JSON"] --> EntityA["Entity A"]
+    Episode --> EntityB["Entity B"]
+    Episode --> Fact["Temporal Fact<br/>A → relation → B"]
+    Fact --> EventTime["事件时间<br/>valid_at / invalid_at"]
+    Fact --> SystemTime["系统时间<br/>created_at / expired_at"]
+    NewEpisode["新 Episode"] --> Conflict{"是否与旧事实冲突"}
+    Conflict -->|是| Invalidate["让旧 Fact 失效<br/>保留历史"]
+    Conflict -->|否| Append["追加新 Fact"]
+    Fact -. "provenance" .-> Episode

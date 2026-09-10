@@ -1,0 +1,11 @@
+flowchart LR
+    Human["人 / 团队"] --> Instructions["Instructions<br/>AGENTS.md / CLAUDE.md / GEMINI.md"]
+    Expert["领域专家"] --> Skill["Skill<br/>SKILL.md + scripts + references"]
+    Agent["Agent"] --> Memory["Memory<br/>MEMORY.md + topic files"]
+    Runtime["Runtime"] --> Session["Session / Handoff<br/>transcript + compaction + state"]
+    Git["Git / Artifacts / Logs"] --> Evidence["可核验事实"]
+    Instructions --> Assembly["Context Assembly"]
+    Skill --> Assembly
+    Memory --> Assembly
+    Session --> Assembly
+    Evidence --> Assembly

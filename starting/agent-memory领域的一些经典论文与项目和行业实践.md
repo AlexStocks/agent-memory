@@ -28,7 +28,7 @@
 
 ![图 5：记忆模块评估方法概览（直接评估 / 间接评估 + 五类下游任务）](images/Survey/05-evaluation_overview.png)
 
-## 二、经典论文：五条奠基路线
+## 二、经典论文：七条奠基路线
 
 | 论文                            | 贡献一句话                                                   | 链接             |
 | ------------------------------- | ------------------------------------------------------------ | ---------------- |
@@ -37,8 +37,8 @@
 | **Mem0** (ECAI'25)              | 生产级记忆流水线：抽取→更新(ADD/UPDATE/DELETE 工具调用)→检索，LoCoMo 上 token 省 90%+ | arXiv:2504.19413 |
 | **Zep/Graphiti** (2025)         | **双时态知识图**：事实带 valid/expired 窗口，能答"上周二 agent 以为什么是真的" | arXiv:2501.13956 |
 | **A-MEM** (NeurIPS'25)          | Zettelkasten 卡片盒：记忆动态建链+演化，不再只读             | arXiv:2502.12110 |
-
-（附：2026 年有两篇新综述可做更新——Du et al. arXiv:2603.07670 和 "Rethinking Memory Mechanisms" arXiv:2602.06052，读完全部旧的再碰。）
+| **Memory for Autonomous LLM Agents** (2026) | `write–manage–read` 闭环 + 时间范围/表示载体/控制策略三维分类 + 四层评估栈 | arXiv:2603.07670 |
+| **Agent Memory in the Second Half** (TMLR'26) | 以 218 篇论文建立“载体 × 认知机制 × 记忆主体”全景图，并把记忆策略学习与真实环境扩展纳入主线 | arXiv:2602.06052 |
 
 ### 2.1 Generative Agents（"斯坦福小镇"，arXiv:2304.03442）
 
@@ -282,6 +282,150 @@ AI 中文翻译版 https://github.com/AlexStocks/agent-memory/blob/main/starting
 - 它和 Zep 也形成一组对照：Zep 用**结构化的双时态时间区间**回答"当时以为什么是真的"；A-Mem 用**LLM 自主改写**来"让理解自己进化"。前者可审计，后者更灵活但不可回溯。
 - **A-Mem 没有为演化后的字段定义 revision / lineage**：context、keywords、tags 被原地改写后，论文没有给出“这次变化由哪条新经验、哪次模型调用产生”的审计结构。Mem0 论文里的事实条目也没有暴露到原始消息的稳定映射；Graphiti / Zep 是三者中的例外，它用 episode 与派生语义产物的双向索引提供了数据谱系，但仍不等于完整治理 provenance。
 - 论文自己也承认局限：组织质量受底层 LLM 能力影响，不同模型会生成不同的链接结构。
+
+### 2.6 Memory for Autonomous LLM Agents（arXiv:2603.07670）
+
+**一句话定位**：这是一篇面向工程和评估的短综述。它不再只问“记忆存什么”，而是把智能体记忆写成一个与行动循环耦合的 `write–manage–read` 系统，并明确要求同时优化效用、效率、适应性、忠实性和治理。
+
+原文：https://arxiv.org/abs/2603.07670 。
+
+全文中文翻译：[Memory-for-Autonomous-LLM-Agents_2603.07670_全文详细翻译.md](Memory-for-Autonomous-LLM-Agents_2603.07670_全文详细翻译.md)。翻译固定对应 `v1`（2026-03-08），包含全部正文、公式、2 张论文表格及 63 条英文参考文献。
+
+#### 2.6.1 形式化：记忆不是数据库，而是策略闭环
+
+论文把每一步智能体行为写成：
+
+$$
+a_t = \pi_\theta\bigl(x_t,\mathcal{R}(M_t,x_t),g_t\bigr)
+$$
+
+$$
+M_{t+1}=\mathcal{U}(M_t,x_t,a_t,o_t,r_t)
+$$
+
+其中，$\mathcal{R}$ 负责从记忆中读取，$\mathcal{U}$ 负责写入和管理；后者不是简单 append，而是可能包含总结、去重、优先级评分、矛盾处理和删除。智能体依据记忆行动，行动结果又反过来修改记忆，因此一次错误写入可能持续污染后续决策。
+
+论文进一步用 POMDP 类比解释这一点：$M_t$ 相当于智能体对不可完全观测世界维护的 belief state。评价记忆的标准不是“数据库有没有命中”，而是它是否为下一步行动保留了足够统计量。
+
+```mermaid
+flowchart LR
+    Input["输入 x_t"] --> Read["读取 R(M_t, x_t)"]
+    Read --> Policy["策略 πθ + 当前目标 g_t"]
+    Policy --> Action["动作 a_t"]
+    Action --> Feedback["环境反馈 o_t / r_t"]
+    Feedback --> Manage["写入与管理 U"]
+    Manage --> Memory[("记忆 M_t+1")]
+    Memory --> Read
+```
+
+*图 2-1：依据论文 §2 重绘的记忆闭环。记忆质量最终要通过行动质量验证。*
+
+#### 2.6.2 三维分类法
+
+| 维度 | 回答的问题 | 主要类别 |
+|---|---|---|
+| **时间范围** | 记忆在多长时间尺度上工作？ | 工作、情节、语义、程序记忆 |
+| **表示载体** | 记忆以什么形式存在？ | 上下文文本、向量索引、结构化存储、可执行仓库、混合存储 |
+| **控制策略** | 谁决定写入、召回和遗忘？ | 启发式规则、提示驱动的自我管理、端到端学习策略 |
+
+这个分类法的价值在于把经常混在一起的三个问题拆开。例如，程序记忆可以保存在 Markdown、数据库或代码仓库中；“程序”描述它的认知用途，“代码仓库”描述表示载体，“由 agent 自主写入还是人工审批”则属于控制策略。
+
+#### 2.6.3 从召回率转向四层评估
+
+论文认为 Precision@$k$、nDCG 等经典检索指标只能说明“是否找到了文档”，不能说明 agent 是否正确使用了它，也不能回答这次检索是否值得增加延迟。它建议使用四层指标栈：
+
+1. **任务效用**：成功率、事实正确性、计划完成率；
+2. **记忆质量**：召回准确率、矛盾率、陈旧分布、任务事实覆盖率；
+3. **效率**：单次记忆操作延迟、注入 token、每步检索次数、存储增长；
+4. **治理**：隐私泄漏、删除合规、访问作用域违规。
+
+它还比较 LoCoMo、MemBench、MemoryAgentBench 和 MemoryArena，强调一个很重要的变化：**被动回答“你记得什么”与在多阶段任务里主动使用记忆，是两种不同能力**。在论文引用的结果中，一些在 LoCoMo 上接近饱和的模型，在 MemoryArena 的相互依赖任务上会掉到 40%–60%。这个数字来自该综述引用的 benchmark，使用时仍应回到 MemoryArena 原论文核对模型和实验设置。
+
+#### 2.6.4 工程价值与证据边界
+
+- 写入路径要做过滤、规范化、去重、优先级评分和 metadata 标注；
+- 读取路径可以使用两阶段召回、retrieval-or-not gating、token budget 和热点缓存；
+- 长期运行必须处理 temporal versioning、source attribution、contradiction 和 consolidation；
+- 每一次 write/read/update/delete 都应可观测，并能重放失败交互；
+- 实现上应优先从“Context + Retrieval Store”开始，只有实测证明学习式控制有效时再升级到复杂分层架构。
+
+需要注意两个边界。第一，这是一篇 15 页、单作者、当前仍为 `v1` 的综述，适合建立工程清单，不适合替代对每个项目和 benchmark 的原始论文核验。第二，摘要称深入讨论“五类机制”，但正文 §4 实际列出六个小节，额外包含 parametric memory / weight-based adaptation；本文按正文结构理解，不替作者消解这个计数差异。
+
+### 2.7 A Survey of Agent Memory in the Second Half（arXiv:2602.06052，TMLR 2026）
+
+**一句话定位**：如果 2024 年综述回答的是“记忆从哪里来、以什么形式存、怎样读写”，这篇 90 页综述回答的是“记忆系统在 AI 下半场如何演化、扩展和评估”。它汇集 60 位作者，筛选 2023 Q1 至 2025 Q4 的 218 篇论文，并把记忆策略本身是否可学习放到中心位置。
+
+> **题名校正**：原提纲中的 “Rethinking Memory Mechanisms” 不是 `2602.06052` 的正式题名。arXiv `v4` 的正式题名是 **A Survey of Agent Memory in the Second Half: Towards Self-Evolving and Long-Horizon Agents**；论文发表于 TMLR 2026。
+
+原文：https://arxiv.org/abs/2602.06052 ，OpenReview：https://openreview.net/forum?id=XycbogUAeJ 。
+
+全文中文翻译：[Agent-Memory-in-the-Second-Half_2602.06052_全文详细翻译.md](Agent-Memory-in-the-Second-Half_2602.06052_全文详细翻译.md)。翻译固定对应 `v4`（2026-08-04），包含全部 10 章、6 张表、8 幅 HTML 原图、1 幅 PDF 补图和 535 条英文参考文献。
+
+![图 2：基础智能体记忆的三维分类（论文原图）](images/AgentMemorySecondHalf/02-memory-main.png)
+
+#### 2.7.1 三维分类：载体、认知机制、记忆主体
+
+| 维度 | 分类 | 设计含义 |
+|---|---|---|
+| **Memory Substrate** | 外部：向量索引、文本记录、结构化/分层存储；内部：权重、latent state、KV cache | 决定容量、延迟、更新成本、跨会话持久性和可删除性 |
+| **Cognitive Mechanism** | 感觉、工作、情节、语义、程序记忆 | 决定信息在感知、当前推理、经验积累、知识抽象和技能复用中的功能 |
+| **Memory Subject** | user-centric 与 agent-centric | 区分“为用户个性化”与“让 agent 积累任务经验”两种优化目标 |
+
+这三维是正交的。一个 coding agent 的失败轨迹可以是 agent-centric episodic memory，落在外部文本日志中；一条用户代码风格偏好可以是 user-centric semantic memory，既能放 profile，也能写入参数。只按“向量/图/文本”分类，会丢掉用途和所有权；只按“语义/情节/程序”分类，又会丢掉运行成本与治理边界。
+
+#### 2.7.2 操作机制：单智能体与多智能体必须分开
+
+对单智能体，论文给出五类操作：
+
+1. **Storage and Index**：决定写什么、怎样编码和建立索引；
+2. **Loading and Retrieval**：按查询、状态和预算取回记忆；
+3. **Update and Refresh**：面对新证据更新或替代旧内容；
+4. **Compression and Summarization**：在固定预算下保留高价值信息；
+5. **Forgetting and Retention**：主动淘汰过时、低价值或受政策约束的内容。
+
+多智能体再增加三组独有问题：
+
+- **架构**：private-only、shared workspace、hybrid 或 orchestrated；
+- **路由**：由 orchestrator 分配、agent 主动访问，或由记忆内容触发路由；
+- **隔离与冲突**：谁能写、谁能读、并发事实如何合并、错误如何通过反馈回路纠正。
+
+这部分比“共享一个向量库”更接近生产现实：共享存储只解决可达性，没有解决所有权、访问控制、一致性和责任归属。
+
+#### 2.7.3 记忆策略也成为学习对象
+
+论文把记忆演化策略分成三个层次：
+
+| 策略 | 学习发生在哪里 | 优点 | 代价 |
+|---|---|---|---|
+| **Prompt-driven** | 用静态或动态 prompt 指挥抽取、更新、反思和遗忘 | 透明、容易接入 | 易受 prompt 与底层模型漂移影响 |
+| **Fine-tuning** | 将记忆操作策略内化进参数 | 推理时更顺滑，减少显式编排 | 更新昂贵，边界和遗忘更难审计 |
+| **Reinforcement learning** | 把 write/read/update/forget 当成步骤级或轨迹级动作 | 可直接优化长期任务回报 | 奖励设计、训练成本和策略稳定性困难 |
+
+这里的核心变化是：记忆系统不再只优化“存储内容”，还开始学习**何时记、记成什么、何时取、什么时候忘**。这也是它所说的 self-evolving agent 的真正含义，而不是简单地让 memory store 越积越多。
+
+#### 2.7.4 评估版图与六个未来方向
+
+论文把 benchmark 分成两大类：
+
+- **user-centric**：多会话个性化、事实/偏好、时间更新、压缩、遗忘、abstention；
+- **agent-centric**：文本多跳、Web/GUI、OS/App、coding、机器人、游戏、长视频和研究任务中的状态保持与行动成功。
+
+这个拆分很重要。前者的 ground truth 会随用户变化；后者通常由环境状态和任务完成条件判定。一个系统在 LoCoMo 上擅长用户事实召回，并不能推出它在 SWE-bench、WebArena 或 OSWorld 中能维持长期执行状态。
+
+论文最后提出六条未来路线：
+
+1. 面向持续学习与 self-evolving agent 的记忆；
+2. 多人与多智能体记忆组织；
+3. 记忆基础设施和效率；
+4. 终身个性化与可信记忆；
+5. 多模态、具身和 world-model agent 的记忆；
+6. 更接近真实部署的纵向、闭环、执行式评估。
+
+#### 2.7.5 与前六条路线的关系
+
+这篇论文最大的价值不是再发明一种 store，而是把前面的路线放进同一个坐标系：Generative Agents 属情节/反思路线，MemGPT 属分层工作记忆路线，Mem0 属外部事实管理路线，Zep 属结构化时间记忆路线，A-MEM 属动态组织路线；`2603.07670` 补上工程与评估清单，`2602.06052` 则补上内部记忆、策略学习、多智能体和真实环境扩展。
+
+它的边界也很明确：覆盖面极广意味着单个项目只能得到有限篇幅；表格中的“覆盖某能力”主要来自论文描述，不等于在统一模型、数据和硬件下完成了横向复现。因此，它适合作为索引和研究地图，不应被当成项目性能排行榜。
 
 ## 三、开源实现：从论文机制到可运行系统
 

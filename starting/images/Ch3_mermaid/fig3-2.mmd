@@ -1,0 +1,10 @@
+flowchart LR
+    Messages["新消息"] --> Scope["Scope 约束"]
+    Scope --> Extract["抽取候选事实"]
+    Extract --> SearchOld["检索相关旧记忆"]
+    Store[("Memory Store")] --> SearchOld
+    SearchOld --> Decide{"ADD / UPDATE /<br/>DELETE / NOOP"}
+    Decide --> Store
+    Query["下一轮查询"] --> Rank["向量 + 关键词 + 实体排序"]
+    Store --> Rank
+    Rank --> Pack["注入 Context Pack"]

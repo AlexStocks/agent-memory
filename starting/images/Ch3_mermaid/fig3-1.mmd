@@ -1,0 +1,9 @@
+flowchart LR
+    App["已有业务应用"] --> Mem0["Mem0<br/>记忆 API"]
+    App --> Graphiti["Graphiti<br/>时间知识图"]
+    App --> LangMem["LangMem<br/>记忆工作流组件"]
+    Letta["Letta<br/>完整 Agent Runtime"] --> Agent["有状态 Agent"]
+    Mem0 --> Pack["Context Pack"]
+    Graphiti --> Pack
+    LangMem --> Pack
+    Pack --> Model["应用自己的 Agent / LLM"]

@@ -1,0 +1,6 @@
+flowchart TB
+    L0["L0 可审计日志<br/>原始 episode 只追加"] --> L1["L1 结构化当前状态<br/>profile / core blocks"]
+    L1 --> L2["L2 混合检索<br/>FTS + vector + filter"]
+    L2 --> L3["L3 事实演化<br/>双时间 + supersession"]
+    L3 --> L4["L4 实体关系投影<br/>graph + multi-hop"]
+    L4 --> L5["L5 程序记忆与后台学习<br/>评估 + 审批 + 回滚"]
