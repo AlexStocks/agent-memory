@@ -10,7 +10,7 @@
 
 > **翻译说明**
 > - 本译文基于 arXiv 官方 HTML 全文（`https://arxiv.org/html/2609.03201v1`）逐段翻译，覆盖：**摘要 + 第 I–VII 节 + 图 1–2 + 表 I–IV 全量数值**；参考文献保留原文编号，不逐条翻译。
-> - **插图**：全部 **2 张图**已下载至 `images/MemoryLACE/`，markdown 使用**相对路径**引用，离线可读；每张图上方保留 `<!-- 原图：URL -->` 注释便于回溯原地址。
+> - **插图**：全部 **2 张图**已下载至 `../images/MemoryLACE/`，markdown 使用**相对路径**引用，离线可读；每张图上方保留 `<!-- 原图：URL -->` 注释便于回溯原地址。
 > - **公式**：原文 HTML 中 MathML 与 LaTeX 重复渲染的痕迹已清理，统一按 LaTeX 重排为 `$…$` / `$$…$$`；术语首次出现时保留英文原文，其后用中文。
 
 ---
@@ -64,7 +64,7 @@ $$ m_{i}=(x_{i},\tau_{i},z_{i},p_{i},a_{i},R_{i}) $$
 图 1 展示了第一阶段。该过程沿用 SimpleMem [5] 的轻量级滑动窗口记忆构造：重叠的对话窗口被转换为独立的原子记忆，由重叠引入的重复条目在生命周期处理之前先被整合。MemLACE 用面向「随时间演化的证据」的生命周期感知整合扩展了这一过程。
 
 <!-- 原图：https://arxiv.org/html/2609.03201v1/figures/write_phase.png -->
-![图 1：MemoryLACE 的记忆构造与整合阶段。携带溯源信息的原子记忆经过有界关系选择、生命周期状态更新与局部批式关系修复。](images/MemoryLACE/01-write_phase.png)
+![图 1：MemoryLACE 的记忆构造与整合阶段。携带溯源信息的原子记忆经过有界关系选择、生命周期状态更新与局部批式关系修复。](../images/MemoryLACE/01-write_phase.png)
 
 > **图 1（原文 Fig. 1）**：Memory construction and consolidation in MemLACE. Atomic provenance-bearing memories undergo bounded relation selection, lifecycle-state updates, and local batch repair of missed relations.
 > （MemoryLACE 的记忆构造与整合：携带溯源信息的原子记忆经过有界关系选择、生命周期状态更新以及局部批式的关系修复。）
@@ -112,7 +112,7 @@ $$ m_{n}\xrightarrow{\mathrm{supersedes}}m_{o},\qquad m_{o}\xrightarrow{\mathrm{
 图 2 概括了查询时的处理流水线。
 
 <!-- 原图：https://arxiv.org/html/2609.03201v1/figures/read_phase.png -->
-![图 2：MemoryLACE 的证据检索与上下文构造阶段。活跃锚点经生命周期关系扩展，被分组为证据单元，经重排序后打包，用于基于证据的生成。](images/MemoryLACE/02-read_phase.png)
+![图 2：MemoryLACE 的证据检索与上下文构造阶段。活跃锚点经生命周期关系扩展，被分组为证据单元，经重排序后打包，用于基于证据的生成。](../images/MemoryLACE/02-read_phase.png)
 
 > **图 2（原文 Fig. 2）**：Evidence retrieval and context construction in MemLACE. Active anchors are expanded through lifecycle relations, grouped into evidence units, reranked, and packed for evidence-grounded generation.
 > （MemoryLACE 的证据检索与上下文构造：活跃锚点通过生命周期关系扩展，被分组为证据单元，经重排序后打包，用于基于证据的生成。）

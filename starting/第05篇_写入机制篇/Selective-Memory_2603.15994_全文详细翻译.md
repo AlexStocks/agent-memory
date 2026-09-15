@@ -11,7 +11,7 @@
 
 > **翻译说明**
 > - 本译文基于 arXiv 官方 HTML 全文（`https://arxiv.org/abs/2603.15994v1` 对应的 HTML 版）逐段翻译，覆盖：**摘要 + 第 1–6 节（含 5.1–5.5 全部子节）+ 复现性说明 + 图 1–8 + 表 1–13 全量数值**；参考文献保留编号不逐条翻译。
-> - **插图**：全部 **8 张图**已从 HTML 抽出图片链接并下载到本地 `images/SelectiveMemory/`（源为 SVG 的图 4–7 同时保留 `.svg` 与转换后的 `.png`）。markdown 使用**相对路径**引用，离线可读；每张图上方保留 `<!-- 原图：URL -->` 注释便于回溯原地址。
+> - **插图**：全部 **8 张图**已从 HTML 抽出图片链接并下载到本地 `../images/SelectiveMemory/`（源为 SVG 的图 4–7 同时保留 `.svg` 与转换后的 `.png`）。markdown 使用**相对路径**引用，离线可读；每张图上方保留 `<!-- 原图：URL -->` 注释便于回溯原地址。
 > - 公式按 LaTeX 重排（原文 HTML 中 MathML 与 LaTeX 重复渲染的痕迹已清理）；术语首次出现时保留英文原文。
 
 ---
@@ -37,7 +37,7 @@
 本文提出**写时门控与分层归档**：一种把上述两条生物原则同时应用于**离散知识存储**的记忆机制。进入的知识对象经过**显著性门（salience gate）**，只有超过习得阈值的才被接纳；低于阈值的对象被**归档进冷存储而非丢弃**。当新信息更新既有概念时，系统创建**取代链接而非执行覆写**，从而维护可保留对先前状态访问的链条。我们在**对抗性干扰项数量多于正确答案**的检索基准上做真实 LLM 评测，证明这种选择性**无需真值质量标签 oracle** 即可实现**完整的质量层级分离**。
 
 <!-- 原图：https://arxiv.org/html/2603.15994v1/01_CLS_complementary_learning_systems.png -->
-![图 1：生物与 AI 中的互补学习系统（Complementary Learning Systems）。大脑用快速的海马存储记录具体情景，用缓慢的新皮层存储语义模式；本架构与之镜像对应——离散的知识对象（快速、可寻址）与 LLM 权重（缓慢、分布式）互补](images/SelectiveMemory/01-cls_complementary_learning_systems.png)
+![图 1：生物与 AI 中的互补学习系统（Complementary Learning Systems）。大脑用快速的海马存储记录具体情景，用缓慢的新皮层存储语义模式；本架构与之镜像对应——离散的知识对象（快速、可寻址）与 LLM 权重（缓慢、分布式）互补](../images/SelectiveMemory/01-cls_complementary_learning_systems.png)
 
 > **图 1（原文 Figure 1）**：Complementary Learning Systems in biology and AI. The brain uses fast hippocampal storage for specific episodes and slow neocortical storage for semantic patterns. Our architecture mirrors this with discrete Knowledge Objects (fast, addressable) complementing LLM weights (slow, distributed).
 > （生物与 AI 中的互补学习系统。大脑用快速的海马存储记录具体情景、用缓慢的新皮层存储语义模式。本架构与之镜像：离散的**知识对象（Knowledge Object, KO）**——快速、可寻址——与 LLM 权重——缓慢、分布式——形成互补。）
@@ -153,7 +153,7 @@ $$S(K) = \sum_{j=1}^{3} w_j \cdot s_j(K) \tag{1}$$
 我们在为**对抗条件下压力测试检索**而设计的基准上，用**真实 LLM 评测**来评估写时门控，测量准确率、存储效率以及对噪声增长的稳健性。
 
 <!-- 原图：https://arxiv.org/html/2603.15994v1/fig_salience_gating_v2.png -->
-![图 2：写时显著性门控架构。进入的知识对象依据三个可观测信号（声誉、新颖性、来源可靠性）打分，无需 oracle 访问；超过阈值 τ 的对象进入活跃存储，低于阈值的被归档进冷存储。在本基准上：50 个 KO → 接纳 13 个 → 100% 准确率（未门控为 13.3%）](images/SelectiveMemory/02-salience_gating.png)
+![图 2：写时显著性门控架构。进入的知识对象依据三个可观测信号（声誉、新颖性、来源可靠性）打分，无需 oracle 访问；超过阈值 τ 的对象进入活跃存储，低于阈值的被归档进冷存储。在本基准上：50 个 KO → 接纳 13 个 → 100% 准确率（未门控为 13.3%）](../images/SelectiveMemory/02-salience_gating.png)
 
 > **图 2（原文 Figure 2）**：Write-time salience gating architecture. Incoming knowledge objects are scored on three observable signals (reputation, novelty, source reliability) without oracle access. Objects above threshold τ enter the active store; objects below are archived in cold storage. On our benchmark: 50 KOs → 13 admitted → 100% accuracy (vs 13.3% ungated).
 > （写时显著性门控架构。进入的知识对象依据三个可观测信号——声誉、新颖性、来源可靠性——打分，**无需 oracle 访问**。超过阈值 $\tau$ 的对象进入活跃存储，低于阈值的被归档到冷存储。在本基准上：**50 个知识对象 → 接纳 13 个 → 100% 准确率**（未门控为 13.3%）。）
@@ -188,7 +188,7 @@ $$S(K) = \sum_{j=1}^{3} w_j \cdot s_j(K) \tag{1}$$
 这一结果说明的是**定性的能力差异，而非定量的改进**。**覆写式系统从根本上无法回答时间性查询**，无论怎样调节阈值或学习权重都不行；**带血缘的归档系统**之所以能回答，是因为它**保留而非销毁**了历史。**图 3** 展示了使这一能力成为可能的版本链结构。
 
 <!-- 原图：https://arxiv.org/html/2603.15994v1/fig_versioning_professional.png -->
-![图 3：版本链通过「取代链接」而非覆写来保留时间历史。当事实更新时，先前版本带着指针被归档，从而支持基于覆写的系统无法回答的时间性查询](images/SelectiveMemory/03-versioning_professional.png)
+![图 3：版本链通过「取代链接」而非覆写来保留时间历史。当事实更新时，先前版本带着指针被归档，从而支持基于覆写的系统无法回答的时间性查询](../images/SelectiveMemory/03-versioning_professional.png)
 
 > **图 3（原文 Figure 3）**：Version chains preserve temporal history through supersession links rather than overwrites. When facts update, prior versions are archived with pointers, enabling temporal queries that overwrite-based systems cannot answer.
 > （版本链通过**取代链接**而非覆写来保留时间历史。当事实更新时，先前版本带着指针被归档，从而支持**基于覆写的系统无法回答**的时间性查询。）
@@ -234,13 +234,13 @@ $$S(K) = \sum_{j=1}^{3} w_j \cdot s_j(K) \tag{1}$$
 **8:1 的比例具有现实相关性**，因为真实世界的知识库会从多个来源累积噪声：AI 生成内容、SEO 优化摘要、过时信息与未经验证的主张。虽然我们尚未见到生产检索系统中「干扰项/信号比」的已发表测量，但**合成内容的泛滥意味着噪声比会随时间上升** `[10]`。即便在 8:1（对许多领域而言可能已属**保守**）下，**读时重排也无法克服这个根本的信噪比问题，而写时策展可以**。
 
 <!-- 原图：https://arxiv.org/html/2603.15994v1/fig_distractor_scaling.svg -->
-![图 4：准确率随干扰比的变化。未门控检索单调崩溃；Self-RAG 一路维持平台直到 6:1，随后在 8:1 灾难性崩溃；写时门控在所有测试比例下恒定保持 100%。阴影区域表示网络规模检索中可能出现的噪声水平](images/SelectiveMemory/04-distractor_scaling.png)
+![图 4：准确率随干扰比的变化。未门控检索单调崩溃；Self-RAG 一路维持平台直到 6:1，随后在 8:1 灾难性崩溃；写时门控在所有测试比例下恒定保持 100%。阴影区域表示网络规模检索中可能出现的噪声水平](../images/SelectiveMemory/04-distractor_scaling.png)
 
 > **图 4（原文 Figure 4）**：Accuracy versus distractor ratio. Ungated retrieval collapses monotonically. Self-RAG maintains a plateau through 6:1 before catastrophic collapse at 8:1. Write gating remains constant at 100% across all tested ratios. The shaded region indicates noise levels plausible for web-scale retrieval.
 > （准确率随干扰比的变化。未门控检索**单调崩溃**；Self-RAG 一路维持平台直到 **6:1**，随后在 **8:1 灾难性崩溃**；**写时门控在所有测试比例下恒定保持 100%**。阴影区域表示网络规模检索中可能出现的噪声水平。）
 
 <!-- 原图：https://arxiv.org/html/2603.15994v1/fig_method_comparison.svg -->
-![图 5：4:1 干扰比下的四方法对比。写时门控比 Self-RAG 高 +6.2pp；两者结合则退化到 Self-RAG 的准确率——critic 在一个本就干净的存储中引入了假阴性](images/SelectiveMemory/05-method_comparison.png)
+![图 5：4:1 干扰比下的四方法对比。写时门控比 Self-RAG 高 +6.2pp；两者结合则退化到 Self-RAG 的准确率——critic 在一个本就干净的存储中引入了假阴性](../images/SelectiveMemory/05-method_comparison.png)
 
 > **图 5（原文 Figure 5）**：Four-way method comparison at 4:1 distractor ratio. Write gating outperforms Self-RAG by +6.2pp. Combining both methods degrades to Self-RAG's accuracy—the critic introduces false negatives in an already-clean store.
 > （4:1 干扰比下的四方法对比。写时门控比 Self-RAG 高 **+6.2pp**；把两种方法结合会退化到 Self-RAG 的准确率——**critic 在一个本就干净的存储中引入了假阴性**。）
@@ -358,13 +358,13 @@ Wikipedia 验证使用的实体是 **LLM 在预训练中已有大量先验知识
 结合 Wikipedia 结果（§4.7），这些实验在**四种知识情境**下验证了写时门控：**知名事实（Wikipedia）、程序化生成的新颖数据（药理学）、前沿研究（arXiv 2026）以及持续累积的事实（累积缩放）**。在 **8:1** 干扰比下，**门控优势与参数化记忆支撑程度成反比**：Wikipedia **+25.1pp**、arXiv **+48.4pp**、药理学 **+64.6pp**（**图 7**）。**写时门控最有价值的时刻，恰恰是 LLM 无法用训练知识弥补检索错误之时。**
 
 <!-- 原图：https://arxiv.org/html/2603.15994v1/fig_novel_domain_scaling.svg -->
-![图 6：新领域数据上的干扰比缩放（5 个种子均值 ± 标准差）。(a) 参数化记忆支撑为零的药理学语料：8:1 时未门控准确率跌至 32%，而写时门控保持 96.6%；(b) 训练截止后的 2026 arXiv 论文：8:1 时未门控跌至 45.2%，而写时门控保持 93.6%](images/SelectiveMemory/06-novel_domain_scaling.png)
+![图 6：新领域数据上的干扰比缩放（5 个种子均值 ± 标准差）。(a) 参数化记忆支撑为零的药理学语料：8:1 时未门控准确率跌至 32%，而写时门控保持 96.6%；(b) 训练截止后的 2026 arXiv 论文：8:1 时未门控跌至 45.2%，而写时门控保持 93.6%](../images/SelectiveMemory/06-novel_domain_scaling.png)
 
 > **图 6（原文 Figure 6）**：Distractor scaling on novel-domain data (5-seed means ± std). (a) Pharmacology corpus with zero parametric memory support: ungated accuracy drops to 32% at 8:1 while write gating maintains 96.6%. (b) 2026 arXiv papers post-training-cutoff: ungated drops to 45.2% at 8:1 while write gating maintains 93.6%. In both domains, write gating degrades less than Self-RAG as noise increases.
 > （新领域数据上的干扰比缩放。**(a)** 参数化记忆支撑为零的药理学语料：8:1 时未门控准确率跌至 **32%**，而写时门控保持 **96.6%**。**(b)** 训练截止后的 2026 arXiv 论文：8:1 时未门控跌至 **45.2%**，而写时门控保持 **93.6%**。在两个领域中，**随着噪声增加，写时门控的退化都小于 Self-RAG**。）
 
 <!-- 原图：https://arxiv.org/html/2603.15994v1/fig_parametric_advantage.svg -->
-![图 7：8:1 干扰比下、跨知识情境的门控优势。优势随参数化记忆支撑程度反比缩放：知名事实（Wikipedia）+25.1pp，训练截止后的研究（arXiv 2026）+48.4pp，零训练知识的程序化数据（药理学）+64.6pp。门控准确率在各领域都保持 93–97%；不断扩大的绿色区域反映了未门控退化的加剧](images/SelectiveMemory/07-parametric_advantage.png)
+![图 7：8:1 干扰比下、跨知识情境的门控优势。优势随参数化记忆支撑程度反比缩放：知名事实（Wikipedia）+25.1pp，训练截止后的研究（arXiv 2026）+48.4pp，零训练知识的程序化数据（药理学）+64.6pp。门控准确率在各领域都保持 93–97%；不断扩大的绿色区域反映了未门控退化的加剧](../images/SelectiveMemory/07-parametric_advantage.png)
 
 > **图 7（原文 Figure 7）**：Gating advantage at 8:1 distractor ratio across knowledge regimes. The advantage scales inversely with parametric memory support: +25.1pp for well-known facts (Wikipedia), +48.4pp for post-cutoff research (arXiv 2026), +64.6pp for procedurally generated data with zero training knowledge (pharmacology). Gated accuracy remains 93–97% regardless of domain; the growing green region reflects increasing ungated degradation.
 > （8:1 干扰比下、跨知识情境的门控优势。优势与**参数化记忆支撑程度成反比**：知名事实（Wikipedia）**+25.1pp**、训练截止后的研究（arXiv 2026）**+48.4pp**、零训练知识的程序化数据（药理学）**+64.6pp**。**门控准确率在各领域都保持 93–97%**；不断扩大的绿色区域反映了**未门控退化的加剧**。）
@@ -409,7 +409,7 @@ Wikipedia 验证使用的实体是 **LLM 在预训练中已有大量先验知识
 「**归档而非删除**」的语义在海马体的**苔藓纤维系统**中有直接的生物学依据。**齿状回**通过**稀疏编码**实现**模式分离**——对任一输入只有 **2–4% 的神经元活跃**，迫使相似经历拥有**不相似的表示** `[16]`。当记忆变得不再相关时，**大脑不切断苔藓纤维连接，而是把它们降级**：降低激活概率，同时保留底层结构。这使得**当情境变化、被遗忘的信息重新变得相关时，日后仍可恢复**。
 
 <!-- 原图：https://arxiv.org/html/2603.15994v1/05_pattern_separation_dentate.png -->
-![图 8：齿状回中的模式分离。稀疏编码（2–4% 激活）迫使相似输入拥有不相似的表示，从而防止干扰。苔藓纤维连接是被「降级」而不是被「删除」，保留了恢复能力——这正是「归档」语义的生物学基础](images/SelectiveMemory/08-pattern_separation_dentate.png)
+![图 8：齿状回中的模式分离。稀疏编码（2–4% 激活）迫使相似输入拥有不相似的表示，从而防止干扰。苔藓纤维连接是被「降级」而不是被「删除」，保留了恢复能力——这正是「归档」语义的生物学基础](../images/SelectiveMemory/08-pattern_separation_dentate.png)
 
 > **图 8（原文 Figure 8）**：Pattern separation in the dentate gyrus. Sparse coding (2–4% activation) forces similar inputs to have dissimilar representations, preventing interference. Mossy fiber connections are deprioritized rather than deleted, preserving recovery capability—the biological basis for archive semantics.
 > （齿状回中的**模式分离**。稀疏编码（2–4% 激活）迫使相似输入拥有不相似的表示，从而**防止干扰**。苔藓纤维连接是被「**降级**」而不是被「**删除**」，保留了恢复能力——这正是**「归档」语义的生物学基础**。）

@@ -10,7 +10,7 @@
 
 > **翻译说明**
 > - 本译文基于 arXiv 官方 HTML 全文（`https://arxiv.org/html/2607.22690v1`）逐段翻译，覆盖：**摘要 + 第 1–5 节 + 附录 A–G + 图 1–2 + 表 1–16 及评分子表、提示清单全量内容**；参考文献保留原文编号，不逐条翻译。
-> - **插图**：全部 2 张图已下载至 `images/LazyMem/`，markdown 使用相对路径引用，离线可读；每张图上方保留 `<!-- 原图：URL -->` 注释便于回溯原地址。
+> - **插图**：全部 2 张图已下载至 `../images/LazyMem/`，markdown 使用相对路径引用，离线可读；每张图上方保留 `<!-- 原图：URL -->` 注释便于回溯原地址。
 > - **公式**：原文 HTML 中 MathML 与 LaTeX 重复渲染的痕迹已清理，统一按 LaTeX 重排为 `$…$` / `$$…$$`；术语首次出现时保留英文原文，其后用中文。
 
 ---
@@ -64,7 +64,7 @@ MemoryBank (Zhong et al., 2024) 与 MemGPT (Packer et al., 2024) 等早期工作
 ### 3.1 LazyMem 流程
 
 <!-- 原图：https://arxiv.org/html/2607.22690v1/figure.svg -->
-![图 1：LazyMem 的整体流程——写入时原样存储消息；查询时先宽泛检索出高召回候选池，再由轻量记忆处理模型在重叠并行窗口中构造紧凑的、以查询为条件的证据，最后交由作答模型预测。](images/LazyMem/01-figure.png)
+![图 1：LazyMem 的整体流程——写入时原样存储消息；查询时先宽泛检索出高召回候选池，再由轻量记忆处理模型在重叠并行窗口中构造紧凑的、以查询为条件的证据，最后交由作答模型预测。](../images/LazyMem/01-figure.png)
 
 > **图 1（原文 Figure 1）**：Pipeline of LazyMem.
 > （LazyMem 的整体流程：消息在写入时不做处理、原样存储；查询时先检索出庞大的原始观测池以保证证据覆盖，再由轻量记忆处理模型经重叠并行窗口构造紧凑的、以查询为条件的证据，供下游作答模型使用。）
@@ -229,7 +229,7 @@ $$R_{\mathrm{qual}}=\begin{cases}0,&\mathcal{K}=\emptyset,\\[4.0pt]\displaystyle
 ### 4.3 效率分析（RQ2）
 
 <!-- 原图：https://arxiv.org/html/2607.22690v1/efficiency_tradeoff_two_panel.svg -->
-![图 2：LongMemEval 上的准确率—效率权衡。左图：LJ 相对传给作答模型的平均记忆 token 数（对数刻度）；右图：LJ 相对主流竞争方法的平均端到端时延，LazyMem 点使用 4B 构造器，虚线为帕累托前沿，越靠左上越好。](images/LazyMem/02-efficiency_tradeoff_two_panel.png)
+![图 2：LongMemEval 上的准确率—效率权衡。左图：LJ 相对传给作答模型的平均记忆 token 数（对数刻度）；右图：LJ 相对主流竞争方法的平均端到端时延，LazyMem 点使用 4B 构造器，虚线为帕累托前沿，越靠左上越好。](../images/LazyMem/02-efficiency_tradeoff_two_panel.png)
 
 > **图 2（原文 Figure 2）**：Accuracy–efficiency trade-offs on LongMemEval. Left: LJ versus the average number of memory tokens passed to the answer model (log scale). MemT is omitted because its mechanism does not expose an answer-input memory-token count that is directly comparable under our accounting protocol. Right: LJ versus mean end-to-end latency for representative competitive methods from basic retrieval, write-time construction, and query-time construction with complete measurements under the same serving setup; the LazyMem point uses the 4B constructor. Horizontal bars span P50 to P95. Dashed lines indicate Pareto frontiers, and the upper-left direction is better. Exact token counts and latency statistics are reported in Tables 6 and 7.
 > （LongMemEval 上的准确率—效率权衡。左图：LJ 相对传给作答模型的平均记忆 token 数（对数刻度）；MemT 因机制所限、无法给出在本记账协议下直接可比的作答输入记忆 token 数而被省略。右图：LJ 相对代表性竞争方法的平均端到端时延，这些方法分别来自基础检索、写入时构造与查询时构造，并在同一服务设置下具备完整测量；LazyMem 的点使用 4B 构造器。水平条覆盖 P50 到 P95；虚线表示帕累托前沿，越靠左上越好。精确的 token 数与时延统计见表 6 与表 7。）

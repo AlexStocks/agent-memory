@@ -13,7 +13,7 @@
 > **翻译说明**
 > - 本译文基于 PDF 提取正文逐段翻译，覆盖：**摘要 + 第 1–8 节 + 图 1–6 + 表 1–2 全量数值**；参考文献保留原文编号，不逐条翻译。
 > - **本文特殊性（必读）**：该论文**没有 arXiv HTML 版**，正文由 PDF 提取得到，插图是从 PDF 按图号裁出的位图。因此**图号口径即 PDF 印刷版 Figure 1–6**；正文中的页码坐标标记（`[[pN y…]]`）、独立页码数字、页眉页脚残留与图内坐标文字均已清理，但所有实质内容与数字逐字保留。
-> - **插图**：共 **6 张图**已下载至 `images/MERIT/`，markdown 使用**相对路径**引用，离线可读；每张图上方保留 `<!-- 原图：PDF Figure N -->` 注释便于回溯。
+> - **插图**：共 **6 张图**已下载至 `../images/MERIT/`，markdown 使用**相对路径**引用，离线可读；每张图上方保留 `<!-- 原图：PDF Figure N -->` 注释便于回溯。
 > - **表格**：表 1、表 2 数值已由人工从 PDF 原始数据行重建为 markdown，译文**逐字保留全部数值**，仅做表题与列名中文化。
 > - **公式**：统一按 LaTeX 重排为 `$…$` / `$$…$$`；显著性符号（𝜌、𝑝、ΔTSR、Cohen's 𝜅 等）均按原义重排。
 
@@ -136,7 +136,7 @@ $\tau$-bench [Yao et al., 2024] 评测的是借助领域 API 与模拟用户对�
 | 难 hard | 1.00 / 0.95 / 1.00 | 0.70 / 0.35 / 0.45 | 1.00 / 0.70 / 1.00 | 0.95 / 0.75 / 1.00 | 0.80 / 0.60 / 0.50 |
 
 <!-- 原图：PDF Figure 1 -->
-![图 1：难度阶梯（易/中/难）下各记忆条件的依赖型任务 TSR，按条件与领域区分（真实实现）；难层（updated-fact）把会覆盖状态的记忆（C4 事实库、C3 LLM 摘要、C1 重放）与基于检索的记忆（C2、C5）清晰分开。](images/MERIT/01-figure1.png)
+![图 1：难度阶梯（易/中/难）下各记忆条件的依赖型任务 TSR，按条件与领域区分（真实实现）；难层（updated-fact）把会覆盖状态的记忆（C4 事实库、C3 LLM 摘要、C1 重放）与基于检索的记忆（C2、C5）清晰分开。](../images/MERIT/01-figure1.png)
 
 > **图 1（原文 Figure 1）**：Dependent-task TSR across the difficulty ladder, per memory condition and domain (real implementations). The hard (updated-fact) tier separates memories that overwrite state, i.e., the fact store (C4) and, notably, LLM summarization (C3), which rewrites its summary each episode, and chronological replay (C1) from retrieval-based memories (C2, C5).
 > （依赖型任务 TSR 随难度阶梯、各记忆条件与领域的变化（真实实现）。难层（更新事实）把「会覆盖状态的记忆」——即事实库（C4）以及尤其值得注意的是每幕重写其摘要的 LLM 摘要（C3）和时序重放（C1）——与「基于检索的记忆」（C2、C5）区分开来。）
@@ -164,7 +164,7 @@ C0 在全部九个（领域 × 难度）格子上、两代中都取得了依赖�
 两代实现界定了每个架构的「实现敏感度带」；这个带很宽（C3 在更新事实上最高达 1.00 TSR），这本身即构成支持「以动作级评测取代记忆系统基准」的论据。
 
 <!-- 原图：PDF Figure 2 -->
-![图 2：各记忆条件（C2–C5）起始实现与真实实现的依赖型任务 TSR，分中/难两层；LLM 摘要救回了 C3 在更新事实上的表现，LLM 抽取让 C4 在 D2 最多跌 60 分，嵌入检索未能修复 C2 的难层崩溃。](images/MERIT/02-figure2.png)
+![图 2：各记忆条件（C2–C5）起始实现与真实实现的依赖型任务 TSR，分中/难两层；LLM 摘要救回了 C3 在更新事实上的表现，LLM 抽取让 C4 在 D2 最多跌 60 分，嵌入检索未能修复 C2 的难层崩溃。](../images/MERIT/02-figure2.png)
 
 > **图 2（原文 Figure 2）**：Dependent-task TSR, starter vs real implementation of each memory condition (C2–C5), on the medium (top) and hard (bottom) tiers. LLM summarization rescues C3 on updated facts; LLM extraction costs C4 up to 60 points in D2; embedding retrieval does not fix C2's hard-tier collapse.
 > （各记忆条件（C2–C5）起始实现与真实实现的依赖型任务 TSR，分中层（上）与难层（下）。LLM 摘要在更新事实上挽救了 C3；LLM 抽取使 C4 在 D2 最多损失 60 分；嵌入检索未能修复 C2 的难层崩溃。）
@@ -174,7 +174,7 @@ C0 在全部九个（领域 × 难度）格子上、两代中都取得了依赖�
 在难层、合并各领域后，C2 检索到的记忆块中曾出现过正确（最新）值的探针幕有 **55** 个；智能体只对其中 **30** 个付诸了行动（忽略率 **0.45**；在起始代中为 0.53；提升检索质量几乎无济于事）。即便是 C1——其记忆块是一份干净完整的转录——在多事实（中层）幕中也会忽略其持有事实的多达 **0.50**（图 3）。这正是「盲区二」变得可度量的体现：除非度量利用率，否则记忆系统的准确率会高估任务层面的收益。
 
 <!-- 原图：PDF Figure 3 -->
-![图 3：忽略率（每个金标准值都在记忆块中、但智能体未据此行动的比例）按条件与领域、分中/难两层（真实实现）；柱上方数字为记忆存在的 episode 数（零值柱仅以其计数表示）。](images/MERIT/03-figure3.png)
+![图 3：忽略率（每个金标准值都在记忆块中、但智能体未据此行动的比例）按条件与领域、分中/难两层（真实实现）；柱上方数字为记忆存在的 episode 数（零值柱仅以其计数表示）。](../images/MERIT/03-figure3.png)
 
 > **图 3（原文 Figure 3）**：Ignore Rate (the fraction of dependent episodes where every gold value was present in the memory block but the agent did not act on it) by condition and domain on the medium and hard tiers (real implementations). Numbers above bars are episode counts with memory present (bars at zero are shown by their count only).
 > （忽略率——即「每个金标准值都出现在记忆块中、但智能体未据此行动」的依赖型幕所占比例——按条件与领域、分中层与难层（真实实现）。柱上方数字为「记忆存在」的幕计数（零值柱仅以其计数显示）。）
@@ -184,7 +184,7 @@ C0 在全部九个（领域 × 难度）格子上、两代中都取得了依赖�
 在 D1 上使用陈旧损坏（图 4），最大且唯一达到 Holm 显著性的危害再次出现在混合方案 C5 上（SMH $+0.25$，在 $\rho = 0.3$ 处，Holm 校正后 $p = 0.030$），以真实实现复现了起始代的结果。一个值得注意的偏移是：采用 LLM 抽取的 C4 显示出 $+0.20$ 的陈旧危害（原始 $p = 0.013$，未通过 Holm），而正则式 C4 的危害 $\leq 0.05$——LLM 抽取器会摄入那些被刚性模式拒绝的损坏记录，这是抽取质量之「税」的又一面（§5.3）。矛盾与干扰损坏在试点规模上只产生微小、不显著的效果。（超出 D1 的损坏扫描与核实率分析留待未来工作。）
 
 <!-- 原图：PDF Figure 4 -->
-![图 4：陈旧记忆危害（TSR_clean − TSR_corrupted，依赖型任务，D1，真实实现）按条件、损坏模式与损坏率 ρ；误差棒为按弧聚类的配对 bootstrap 95% 置信区间。](images/MERIT/04-figure4.png)
+![图 4：陈旧记忆危害（TSR_clean − TSR_corrupted，依赖型任务，D1，真实实现）按条件、损坏模式与损坏率 ρ；误差棒为按弧聚类的配对 bootstrap 95% 置信区间。](../images/MERIT/04-figure4.png)
 
 > **图 4（原文 Figure 4）**：Stale-memory harm (TSR clean −corrupted, dependent tasks, D1, real implementations) by condition, corruption mode, and corruption rate $\rho$; error bars are paired bootstrap 95% CIs clustered by arc.
 > （陈旧记忆危害（干净 TSR − 损坏 TSR，依赖型任务，D1，真实实现）按条件、损坏模式与损坏率 $\rho$ 的变化；误差棒为按弧聚类的配对 bootstrap 95% 置信区间。）
@@ -230,7 +230,7 @@ C0 在全部九个（领域 × 难度）格子上、两代中都取得了依赖�
 **从业者指引（暂定）。** 如果任务依赖于「会被修订的事实」（地址、配置、日程——也就是大多数运营性事实），应优先选择会覆盖状态的记忆（结构化事实库，或 LLM 摘要——后者因每幕重写其摘要而意外地具备更新稳健性），而非会累积的检索式记忆。不要假设混合方案会自动继承其「较好组件」的行为：要实测。全重放是一个很强的准确率基线，却在成本（2.7× token）与多事实组合上失败。并且要把「写入路径」视为一等风险：替换抽取实现在一个领域里就让 C4 变动了 60 分（§5.3）；截断不是摘要。
 
 <!-- 原图：PDF Figure 5 -->
-![图 5：每 episode 计量成本（含记忆侧调用）vs 易层依赖型任务 TSR（真实实现）；C4 在 D1/D3 保持在帕累托前沿，却在 D2 让位；C1 全重放在各处付出 2–3× 成本溢价，却得到相等或更低的 TSR。](images/MERIT/05-figure5.png)
+![图 5：每 episode 计量成本（含记忆侧调用）vs 易层依赖型任务 TSR（真实实现）；C4 在 D1/D3 保持在帕累托前沿，却在 D2 让位；C1 全重放在各处付出 2–3× 成本溢价，却得到相等或更低的 TSR。](../images/MERIT/05-figure5.png)
 
 > **图 5（原文 Figure 5）**：Metered cost per episode (including memory-side calls) vs. dependent-task TSR at the easy tier, real implementations. C4 stays on the Pareto frontier in D1/D3 but cedes it in D2; C1 full replay pays a 2–3× cost premium for equal or lower TSR everywhere.
 > （每幕计量成本（含记忆侧调用）对易层依赖型任务 TSR（真实实现）。C4 在 D1/D3 保持在帕累托前沿，但在 D2 让位；C1 全重放在各处都付出了 2–3× 的成本溢价，却得到相等或更低的 TSR。）
@@ -248,7 +248,7 @@ C0 在全部九个（领域 × 难度）格子上、两代中都取得了依赖�
 **构念（Construct）：** 程序化校验器可能无法捕捉所有真实世界的成功概念；MUR 追踪器是字符串包含式（string containment），仅对照单一人类标注者做了验证（$\kappa = 0.63$，保守方向），尚未做独立的双人标注；人类审计（冻结样本已提交）……**内部（Internal）：** 各条件间的提示词差异仅限于记忆块；增量计分消除了世界状态遗留；模拟模型网格守护着流水线，但模拟结果绝不作为发现报告。**外部（External）：** 网格覆盖三个智能体模型外加两个带门槛的抽检，且抽检在两个方向上界定了模型强度问题：前沿能力无法替代记忆（即便对 Claude Opus 4.8 与 Sonnet 5，C0 = 0.00），且 C2 的崩溃在最新一代上依旧存在。然而所有发现仍局限于三个合成领域、配以脚本化用户（LLM 改写模式缓解了 D1 上的措辞过拟合），每格 10 弧，且每个真实记忆实现都只是其家族的一个代表；§5.3 已量化实现选择的影响有多大。**可复现性（Reproducibility）：** 确定性的带种子生成、固定的模型 ID、公开发布的轨迹、$0 模拟模型。API 模型弃用仍是一项局限：公开发布的轨迹保存了所报告的那些运行，且实验框架接受任何 OpenAI 兼容端点（包括本地部署的开权重模型），因此即便所报告的 API 模型退役，该网格仍可重跑。
 
 <!-- 原图：PDF Figure 6 -->
-![图 6：各智能体模型在难层的 TSR（条 hatching=模型，颜色=条件；须线=3 个 gpt-4.1-mini 种子的 min–max）；C2 嵌入检索在每个模型某处崩溃，但位置因模型而异；C3 LLM 摘要处处稳健。](images/MERIT/06-figure6.png)
+![图 6：各智能体模型在难层的 TSR（条 hatching=模型，颜色=条件；须线=3 个 gpt-4.1-mini 种子的 min–max）；C2 嵌入检索在每个模型某处崩溃，但位置因模型而异；C3 LLM 摘要处处稳健。](../images/MERIT/06-figure6.png)
 
 > **图 6（原文 Figure 6）**：Hard-tier TSR across agent models (bar hatch = model, color = condition; whiskers = min–max across the 3 gpt-4.1-mini seeds). Embedding retrieval (C2) collapses somewhere for every model, but where is model-idiosyncratic; LLM summarization (C3) is robust everywhere.
 > （各智能体模型在难层的 TSR（条 hatching=模型，颜色=条件；须线=3 个 gpt-4.1-mini 种子的 min–max）。嵌入检索（C2）在每个模型身上都会在某处崩溃，但崩溃位置因模型而异；LLM 摘要（C3）处处稳健。）

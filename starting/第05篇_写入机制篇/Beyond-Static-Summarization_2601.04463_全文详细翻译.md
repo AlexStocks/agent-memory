@@ -16,7 +16,7 @@
 
 > **翻译说明**
 > - 本译文基于 arXiv 官方 HTML 全文（`https://arxiv.org/html/2601.04463v1`）逐段翻译，覆盖：**摘要 + 第 1–5 节 + 局限性 + 图 1–5 + 表 1–4 全量数值**；参考文献保留原文编号，不逐条翻译。
-> - **插图**：全部 **5 张图**已从 HTML 抽出图片链接并下载到本地 `images/ProMem/`（其中源为 SVG 的图 4、图 5 同时保留 `.svg` 与转换后的 `.png`）。markdown 使用**相对路径**引用，离线可读；每张图上方保留 `<!-- 原图：URL -->` 注释便于回溯原地址。
+> - **插图**：全部 **5 张图**已从 HTML 抽出图片链接并下载到本地 `../images/ProMem/`（其中源为 SVG 的图 4、图 5 同时保留 `.svg` 与转换后的 `.png`）。markdown 使用**相对路径**引用，离线可读；每张图上方保留 `<!-- 原图：URL -->` 注释便于回溯原地址。
 > - 公式统一按 LaTeX 重排（原文 HTML 中 MathML 与 LaTeX 重复渲染的痕迹已清理）；术语首次出现时保留英文原文。
 
 ---
@@ -38,7 +38,7 @@
 如**图 1** 所示，当前大多数基于摘要的方法**高度重视记忆组织与利用阶段**，往往设计复杂的记忆演化回路与先进的记忆检索机制来处理已存储的记忆摘要 `[Kang et al., 2025; Ke et al., 2025; Fang et al., 2025]`。然而，**最初的记忆抽取阶段却常被忽视**。我们认为这些方法存在两个根本局限：
 
 <!-- 原图：https://arxiv.org/html/2601.04463v1/pipeline.png -->
-![图 1：基于摘要的记忆管理通用框架（从记忆抽取到组织、利用的完整流水线）](images/ProMem/01-pipeline.png)
+![图 1：基于摘要的记忆管理通用框架（从记忆抽取到组织、利用的完整流水线）](../images/ProMem/01-pipeline.png)
 
 > **图 1（原文 Figure 1）**：General framework of summary-based memory management for LLM agents. It starts with memory extraction, where raw dialogue is condensed into summaries, followed by memory organization and utilization stages.
 > （面向 LLM 智能体的基于摘要的记忆管理通用框架：从记忆抽取开始，把原始对话凝练为摘要，随后进入记忆组织与利用阶段。）
@@ -88,7 +88,7 @@
 本节先简要介绍循环加工理论及我们的动机，然后给出所提出的 ProMem 方法。
 
 <!-- 原图：https://arxiv.org/html/2601.04463v1/rpt.png -->
-![图 2：循环加工理论（RPT）与本文方法的对应关系。(a) Kanizsa 错觉说明大脑如何用循环加工把低层视觉信息与高层解释结合起来；(b) 本文把「初始抽取—补全—验证」映射为「前馈扫描—循环反馈」](images/ProMem/02-rpt.png)
+![图 2：循环加工理论（RPT）与本文方法的对应关系。(a) Kanizsa 错觉说明大脑如何用循环加工把低层视觉信息与高层解释结合起来；(b) 本文把「初始抽取—补全—验证」映射为「前馈扫描—循环反馈」](../images/ProMem/02-rpt.png)
 
 > **图 2（原文 Figure 2）**：The connection between RPT and our method. (a) The Kanizsa illusion shows how the brain uses recurrent processing to integrate low-level visual cues with high-level interpretation. (b) We map initial extraction, completion and verification onto the feed-forward sweep and the recurrent feedback loop.
 > （RPT 与本文方法的联系。**(a)** Kanizsa 错觉展示了大脑如何用循环加工把低层视觉线索与高层解释整合起来；**(b)** 我们把初始抽取、补全与验证分别映射到「前馈扫描」与「循环反馈回路」。）
@@ -108,7 +108,7 @@
 - **补全与验证作为循环反馈**：我们把记忆补全与基于自我提问的验证机制视为「循环反馈回路」。在这个回路中，智能体主动「回看」原始对话以核对抽出的事实。该回路就像 RPT 中通向意识的转变，帮助智能体从被动加工走向**主动的记忆管理**，从而确保最终记忆既完整又准确。
 
 <!-- 原图：https://arxiv.org/html/2601.04463v1/framework.png -->
-![图 3：本文提出的主动式记忆抽取（ProMem）框架总览。工作流包含三个主要阶段：(1) 初始记忆抽取（前馈扫描）；(2) 基于语义匹配的记忆补全；(3) 基于自我提问的记忆验证（循环反馈）](images/ProMem/03-framework.png)
+![图 3：本文提出的主动式记忆抽取（ProMem）框架总览。工作流包含三个主要阶段：(1) 初始记忆抽取（前馈扫描）；(2) 基于语义匹配的记忆补全；(3) 基于自我提问的记忆验证（循环反馈）](../images/ProMem/03-framework.png)
 
 > **图 3（原文 Figure 3）**：The overview of our proposed proactive memory extraction framework. The workflow consists of three main stages: (1) Initial memory extraction as a feed-forward sweep; (2) Memory completion via semantic matching to align entries with source turns; (3) Memory verification via self-questioning, which forms the recurrent feedback loop.
 > （本文提出的主动式记忆抽取框架总览。工作流包含三个主要阶段：**(1)** 作为前馈扫描的初始记忆抽取；**(2)** 通过语义匹配把条目对齐到来源轮次的记忆补全；**(3)** 构成循环反馈回路的自我提问式记忆验证。）
@@ -268,7 +268,7 @@ $$S(m_{new}, m) > \tau_{sim} \tag{6}$$
 **第三，完整方法取得了最佳权衡。** 尽管其记忆准确率略低于基线，但更高的记忆完整性（**+19.77%**）带来了最佳的问答表现。这表明对下游任务而言，**召回完整信息比在少量事实上保持完美精确更重要**。
 
 <!-- 原图：https://arxiv.org/html/2601.04463v1/ratio.svg -->
-![图 4：不同压缩比下的性能（ProMem 对 token 压缩高度稳健，低压缩比下仍维持稳定表现）](images/ProMem/04-ratio.png)
+![图 4：不同压缩比下的性能（ProMem 对 token 压缩高度稳健，低压缩比下仍维持稳定表现）](../images/ProMem/04-ratio.png)
 
 > **图 4（原文 Figure 4）**：Performance w.r.t. compression ratios.（随压缩比变化的性能表现。）
 
@@ -296,7 +296,7 @@ $$S(m_{new}, m) > \tau_{sim} \tag{6}$$
 | **ProMem** | **43.09** | 82.32 | **49.15** |
 
 <!-- 原图：https://arxiv.org/html/2601.04463v1/longmemeval.svg -->
-![图 5：LongMemEval 上的性能比较（ProMem 以 69.57% 的问答准确率超过 NativeRAG、Mem0 与 SOTA 方法 LightMem（v1 数据；v2 更新为 ProMem 72.12% 对 LightMem 68.64%））](images/ProMem/05-longmemeval.png)
+![图 5：LongMemEval 上的性能比较（ProMem 以 69.57% 的问答准确率超过 NativeRAG、Mem0 与 SOTA 方法 LightMem（v1 数据；v2 更新为 ProMem 72.12% 对 LightMem 68.64%））](../images/ProMem/05-longmemeval.png)
 
 > **图 5（原文 Figure 5）**：Performance comparison on LongMemEval.（LongMemEval 上的性能比较。）
 

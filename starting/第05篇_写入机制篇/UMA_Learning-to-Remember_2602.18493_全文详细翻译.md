@@ -11,7 +11,7 @@
 
 > **翻译说明**
 > - 本译文基于 arXiv 官方 HTML 全文（`https://arxiv.org/html/2602.18493v1`）逐段翻译，覆盖：**摘要 + 第 1–6 节 + 局限性 + 参考文献 + 附录 A–I**；**图 1–4、表 1–8 与算法 1 全量呈现**；参考文献保留原文编号，不逐条翻译。
-> - **插图**：共 **4 张图**已下载至 `images/UMA/`，markdown 使用相对路径引用，离线可读；每张图上方保留 `<!-- 原图：URL -->` 注释便于回溯原地址。
+> - **插图**：共 **4 张图**已下载至 `../images/UMA/`，markdown 使用相对路径引用，离线可读；每张图上方保留 `<!-- 原图：URL -->` 注释便于回溯原地址。
 > - **公式**：原文 HTML 中 MathML 与 LaTeX 重复渲染的痕迹已清理，统一按 LaTeX 重排为 `$…$` / `$$…$$`；术语首次出现时保留英文原文，其后用中文。
 
 ---
@@ -33,7 +33,7 @@
 我们提出**统一记忆智能体（UMA）**，一个端到端强化学习框架，在统一策略中联合优化记忆操作（创建、更新、删除、重组）与任务执行。为诊断主动推理能力，我们提出 **Ledger-QA**，一个需要连续状态追踪的基准，其表现直接反映主动整合信息（而非对每个查询重算原始历史）的能力。我们在横跨三大任务类别的 13 个数据集上做了广泛评测：连续推理（Ledger-QA）、测试时学习、精准检索。实验表明，UMA 在动态推理任务上大幅超越长上下文与 RAG 基线，同时在标准检索基准上保持竞争力；消融实验也证实了端到端优化的必要性。
 
 <!-- 原图：https://arxiv.org/html/2602.18493v1/RAGvsAM.png -->
-![图 1：记账示例对比——RAG 每问都要重算检索日志，而智能体记忆维护结构化状态、靠读取相关字段直接作答](images/UMA/01-RAGvsAM.png)
+![图 1：记账示例对比——RAG 每问都要重算检索日志，而智能体记忆维护结构化状态、靠读取相关字段直接作答](../images/UMA/01-RAGvsAM.png)
 
 > **图 1（原文 Figure 1）**：Expense-tracking example: RAG reprocesses retrieved logs per query, while Agentic Memory maintains a structured state and answers by reading the relevant fields.
 > （记账示例：RAG 对每个查询都重新处理检索到的日志，而智能体记忆维护一个结构化状态，并通过读取相关字段来作答。）
@@ -43,7 +43,7 @@
 ## 2. 方法
 
 <!-- 原图：https://arxiv.org/html/2602.18493v1/mem.png -->
-![图 2：UMA 框架总览——阶段一用 CRUD 增量维护记忆库与核心摘要，阶段二结合结构化检索与原文检索作答](images/UMA/02-mem.png)
+![图 2：UMA 框架总览——阶段一用 CRUD 增量维护记忆库与核心摘要，阶段二结合结构化检索与原文检索作答](../images/UMA/02-mem.png)
 
 > **图 2（原文 Figure 2）**：Overview of UMA. Phase I incrementally maintains a structured Memory Bank and core summary via CRUD over chunks; Phase II answers queries using both structured retrieval from the bank and raw-context retrieval.
 > （UMA 概览。阶段一通过对分块执行 CRUD 操作，增量维护一个结构化的记忆库与核心摘要；阶段二同时利用来自记忆库的结构化检索与原始上下文检索来回答查询。）
@@ -115,7 +115,7 @@ $$a_{t}\sim\pi_{\theta}(\cdot|I_{sys},m^{core},c_{k},h_{t}) \tag{2}$$
 ### 2.3 训练：任务分层 GRPO
 
 <!-- 原图：https://arxiv.org/html/2602.18493v1/memrl.png -->
-![图 3：任务分层 GRPO——记忆步与 QA 步交错采样，记忆步获得来自后续 QA 奖励的「未来效用信号」，优势在不同组内分别归一化](images/UMA/03-memrl.png)
+![图 3：任务分层 GRPO——记忆步与 QA 步交错采样，记忆步获得来自后续 QA 奖励的「未来效用信号」，优势在不同组内分别归一化](../images/UMA/03-memrl.png)
 
 > **图 3（原文 Figure 3）**：Illustration of Task-Stratified GRPO. For a given input, multiple trajectories are sampled containing interleaved Memory (blue) and QA (red) steps. (Right) The reward function combines immediate tool execution feedback ($r_{tool}$) with outcome assessments ($r_{outcome}$). Crucially, memory steps receive a Future Utility Signal derived from subsequent QA rewards. (Bottom) Advantages are normalized within distinct groups: all memory steps are aggregated into a global pool ($\mathcal{G}_{mem}$), while QA steps are normalized strictly within their specific query groups ($\mathcal{G}_{qa,j}$).
 > （任务分层 GRPO 示意。对于给定输入，采样出多条包含交错的记忆（蓝色）与 QA（红色）步骤的轨迹。（右侧）奖励函数将即时的工具执行反馈（$r_{tool}$）与结果评估（$r_{outcome}$）结合起来。关键在于，记忆步骤会收到一个由后续 QA 奖励导出的「未来效用信号」。（底部）优势在不同组内分别归一化：所有记忆步骤被聚合进一个全局池（$\mathcal{G}_{mem}$），而 QA 步骤严格在其各自的查询组内归一化（$\mathcal{G}_{qa,j}$）。）
@@ -275,7 +275,7 @@ Ledger-QA 与标准 RAG 基准的根本区别在于，它要求长程状态聚�
 ### 4.3 Results on Ledger-QA
 
 <!-- 原图：https://arxiv.org/html/2602.18493v1/ledgerqaresult.svg -->
-![图 4：Ledger-QA 长程性能——随会话数增大基线崩塌，UMA（粉色线）始终远超基线，50 会话仍保持 50%+ 准确率](images/UMA/04-ledgerqaresult.png)
+![图 4：Ledger-QA 长程性能——随会话数增大基线崩塌，UMA（粉色线）始终远超基线，50 会话仍保持 50%+ 准确率](../images/UMA/04-ledgerqaresult.png)
 
 > **图 4（原文 Figure 4）**：Performance comparison on Ledger-QA across varying session counts. The x-axis represents the number of dialogue sessions (simulating increasing time horizons), and the y-axis denotes accuracy. Detailed numerical results are provided in Table 8 in Appendix I.
 > （Ledger-QA 在不同会话数量下的性能对比。横轴表示对话会话数（模拟不断增长的时间跨度），纵轴表示准确率。详细数值结果见附录 I 的表 8。）
