@@ -48,36 +48,43 @@ ArXiv 论文研究工作日志。每条记录格式：论文发表日期 + 标�
 ### [2026-08-21] Utility Under Attack: Agent Memory Poisoning and the Limits of Content Screening and Provenance Ranking
 - **Authors**: Arulnidhi Karunanidhi
 - **Link**: https://arxiv.org/abs/2608.21230
+- **译文**: `starting/第06篇_有界召回篇/UtilityUnderAttack_2608.21230_全文详细翻译.md`（2026-09-18 完成带图带表的全文翻译，check_trans 校验 PASS）
 - **Summary**: 与 WMT 同日发表，正面对上 P-1 的投毒实验。用朴素措辞（无指令、无触发器、无检索器优化）的假陈述投毒 **1.2%** 的 LongMemEval 语料，准确率 0.850 → 0.300。四阶段写时筛查对间接 prompt injection 有 0.832 recall、只误标 1.5% 含触发词的良性文本，但 **360 条投毒记忆一条都没拒掉（0/360）**。溯源加权：出厂权重与不设防统计不可区分（p=0.80）；强权重只能靠排斥不可信内容换效用（混合溯源语料 0.3167 → 0.7000），但当答案证据本身不可信时，证据召回掉到 0、准确率 0.0417。结论：**加性溯源惩罚没有可用工作点，应改为检索侧的有界占用约束（bounded occupancy）**。给 P-1「AF 压到 0.965 但未归零」提供了结构性解释。边界：单作者；投毒为朴素虚假陈述，不能外推为「内容筛查对对抗性投毒无效」。
 
 ### [2026-07-20] Retain or Consolidate? Budget-Dependent Operator Selection for Language Agent Memory
 - **Authors**: Qingcan Kang, Mingyang Liu, Shixiong Kai 等 8 人
 - **Link**: https://arxiv.org/abs/2607.17545（v2）
+- **译文**: `starting/第06篇_有界召回篇/RetainOrConsolidate_2607.17545_全文详细翻译.md`（2026-09-18 完成带图带表的全文翻译，check_trans 校验 PASS）
 - **Summary**: 把「记忆该不该压」从启发式打分升级为**预算依赖的算子选择**：保留 vs 整合，整合再选 Merge / Abstract / Rewrite。核心理论是把每个算子的效用分解为对「保留会漏掉的证据」的 coverage effect 与对「已经装得下的原始证据」的**带符号** replacement effect，两者的平衡解释了为何偏好动作随相对预算压力翻转。实现为 OAS，从预生成特征估计动作效用并做 held-out 危害校准。LongMemEval 紧凑预算下整合带来最高 **+48% 绝对准确率**，松预算下保留更优；LoCoMo 在更小预算复现同一 crossover（与其证据更短一致）；需要压缩时跨笔记抽象与合并普遍优于局部重写。**是对 P-1 固定系数（0.75 / 0.30）的直接否定：不存在全局最优策略。**
 
 ### [2026-09-08] What Eviction Destroys: A Restore-Counterfactual Audit of Forgetting in Agent Memory
 - **Authors**: Chen Shen
 - **Link**: https://arxiv.org/abs/2609.08279
+- **译文**: `starting/第06篇_有界召回篇/EvictionDestroys_2609.08279_全文详细翻译.md`（2026-09-18 完成带图带表的全文翻译，check_trans 校验 PASS）
 - **Summary**: 提出 **restore counterfactual**——逐题配对干预，把该题的 gold evidence 在读取时重新装回上下文并重跑同一 reader；结合正确性变化与「驱逐后证据是否仍在」把每个可答错题分为可恢复 / 不可逆 / 残余三类。在 LongMemEval-S 上评 FIFO / random / 冗余感知 / LLM 重要性四种驱逐策略 × 3 预算 × 2 检索口径。**80k 预算 top-k 检索下，被恢复纠正的错误里不可逆占比 0.67—0.73（LLM 重要性 0.60）；8k 预算下四种策略全部达到 1.00。** 另指出预算-准确率结果在检索口径不同时不可直接比较。**给第 6 篇 6.4 节「证据下限」提供量化刻度：压缩真正不可逆的比例是有方法可测的。** 边界：单作者；匹配准确率分析分辨率 1.2—6 pp，「未检测到差异」≠「无差异」。
 
 ### [2026-08-13] RippleMem: From Isolated Retrieval to Associative Recollection for Long-Term Agent Memory
 - **Authors**: Jingbo Ji, Lingyi Li, Xilong Cheng 等 7 人
 - **Link**: https://arxiv.org/abs/2608.13334
+- **译文**: `starting/第06篇_有界召回篇/RippleMem_2608.13334_全文详细翻译.md`（2026-09-18 完成带图带表的全文翻译，check_trans 校验 PASS）
 - **Summary**: **StructMem 的正面竞品**，痛点陈述几乎一致：全上下文要噪声搜索、扁平检索返回孤立不完整记录、图记忆构建贵且压掉丰富事件语境。RippleMem 把交互历史存成 cue-rich episodic memory units 并组织为事件中心图，查询时先用混合线索召回 anchors，再沿语义与结构关联**扩展补全缺失证据**——已被召回的记忆既是答案上下文也是补全线索。LoCoMo 与 LongMemEval-S 上整体最优，LLM-as-Judge 准确率 LoCoMo +3.95%、LongMemEval-S 最多 +11.87%，**图构建成本降约 30×**。与 P-2 的关键差异：StructMem 的跨事件整合是离线周期性批处理、种子选择对查询是盲的；RippleMem 是查询时在线联想补全。
 
 ### [2026-08-03] MemSIF: From Structured Interactions to Dual-Track Fact Memory for LLM Agents
 - **Authors**: YuFei Luo, Xiucheng Xu, Zhen Yang
 - **Link**: https://arxiv.org/abs/2608.01742（v2）
+- **译文**: `starting/第06篇_有界召回篇/MemSIF_2608.01742_全文详细翻译.md`（2026-09-18 完成带图带表的全文翻译，check_trans 校验 PASS）
 - **Summary**: 命名两种长期交互中的失配：**TSM（Temporal-Structural Misalignment，时间邻近不能可靠对齐主题或事件级相关性）**与 **DUM（Delayed Utility Manifestation，写时显著性不能可靠预测未来查询效用）**。DUM 同时打在 P-1 写时打分与 P-2 写时结构上——若写时信号预测不了未来效用，两侧都要打折。解法：Structured Interaction Memory（Topical Segments 保留局部主题连贯 + Event Trajectories 维持跨时事件连续）+ Dual-Track Fact Memory（CoreFact 写时按 schema 固化稳定信息；ActiveFact 按需生成，被多源支持且反复被查询才提升为复用）。LoCoMo 与 LongMemEval-S × 5 基座全部取得最高 Total ACC，比最强基线高 2.29%—8.79%（LoCoMo）/ 2.87%—6.15%（LongMemEval-S）。代码：https://github.com/luoyufeihaha/MemSIF
 
 ### [2026-08-17] What Does Context Compression Cost an Agent? Interaction Costs Unrevealed by Task-Completion Metrics
 - **Authors**: Shuyu Liu
 - **Link**: https://arxiv.org/abs/2608.16370
+- **译文**: `starting/第06篇_有界召回篇/CompressionCost_2608.16370_全文详细翻译.md`（2026-09-18 完成带图带表的全文翻译，check_trans 校验 PASS）
 - **Summary**: **明确引用 Memento（P-3）**。用有界时程（固定 24 轮）工具调用 agent 的受控运行时协议测量「再获取成本」：压缩会让 agent 被迫重新获取被丢弃的状态，而完成度可能统计上毫无变化。六个模型-场景对照中检索调用**全部上升**且几乎解释了全部新增交互，五组通过 Holm 校正；预设 5× 压缩点上完成度变化均不显著；GPT-5.5 最典型：完成度 80% → 85%（p=1.0）而检索从 21.0 涨到 63.9 次（p=.002）。保留干预进一步分离状态数量/类型/内容有效性：用语义无关内容替换保留状态使检索 +57%（p<.001）而完成度无显著变化。ALFWorld 上滑窗压缩没有检索激增，说明该特征是环境依赖的。**结论：P-3 报的 7.4 / 15.3 个百分点只是压缩代价的下界。** 边界：单作者。
 
 ### [2026-08-29] Selective Forgetting: A Graph-Based Memory Framework for Long-Term LLM Agents
 - **Authors**: Theo Rusu, Sourena Khanzadeh, Manar Alalfi
 - **Link**: https://arxiv.org/abs/2608.28978
+- **译文**: `starting/第06篇_有界召回篇/SelectiveForgetting_2608.28978_全文详细翻译.md`（2026-09-18 完成带图带表的全文翻译，check_trans 校验 PASS）
 - **Summary**: 直接检验「图记忆是否比扁平检索更强」这一假设。框架把每轮对话抽成带类型节点与属性边，用两跳子图答题，并周期性剪掉「新近度 + 访问频次 + 度中心性 + 时间」加权得分低的节点。**LongMemEval 上，在匹配的候选生成预算（5 个检索根）下，图未超过扁平向量基线**：token F1 0.417 vs 0.468，500 题配对 bootstrap Δ=-0.050（95% CI [-0.085,-0.016]）；差距最大在「需回忆某条助手原话」类，judged correctness 从 0.911 掉到 0.607——把 turn 拆成实体丢掉了这些题依赖的表层形式。**但遗忘模块是成功的**：对 27,021 节点的持久图剪掉 9.8% 节点 / 9.5% 字节，token F1 不变（+0.001，CI [-0.015,+0.016]），judged correctness 仅降 1.6 点（损失上界 3.8 点）。作者自述：单抽取器单基准，结论刻画该抽取式流水线而非图结构记忆整体。代码：https://github.com/skhanzad/Selective-Amnesia
 
 ---

@@ -214,4 +214,395 @@ $$\text{score}(m) = w_s\cdot\text{sim}(q,m) + w_t\cdot\tau(m) + w_e\cdot e(m) + 
 
 两道防御在已发布系统中都默认开启。没有一道是为这次评估而新增的。
 
-<!-- PART2 -->
+## 5. 方法
+
+我们跑了三项评估。第一项把写入路径筛查当作检测器、在成熟的注入语料上对照基线度量；第二项在一个成熟的记忆基准上度量干净检索质量；第三项投毒该基准的语料，并度量检索质量变成了什么样。三者都可由发布的测试工具复现；固定的修订号、种子与模型标识符记录在附录 A。
+
+### 5.1 写入路径筛查基准
+
+#### 定位（Framing）
+
+我们把筛查当作一个作用于内容的二分类检测器来评估，而不是当作作用于模型行为的越狱防御。每个系统被封装为一个单一谓词 $\mathrm{predict}(\text{text})\rightarrow\{\text{flag},\text{allow}\}$，并在恶意与良性两类语料上分别打分。这刻意偏离了周边文献——后者主要报告攻击成功率。攻击成功率把「检测」与「模型鲁棒性」混为一谈，而且关键的是，它对检测器在良性流量上做了什么只字不提。因此我们报告完整的混淆矩阵，并在它出现的任何地方都把假阳性率与召回率等量齐观。
+
+#### 系统（Systems）
+
+十个配置：一个无保护对照组；一个朴素正则表达式基线；三个基于模型的检测器（ProtectAI DeBERTa v2、Meta Llama Prompt Guard 2、LLM Guard）；两个 LLM-as-judge 配置（GPT-4o-mini 与 Claude Haiku 4.5）；以及三个 Aegis 配置（仅确定性核心，以及分别搭载两种 Stage-4 后端时的完整流水线）。我们特意纳入朴素正则基线，是为了让确定性核心能够对照「能做同样工作的最廉价之物」被度量。
+
+#### 语料（Corpora）
+
+五个语料，汇总于表 1：两个恶意的——来自 deepset/prompt-injections 的直接注入、以及从 InjecAgent 抽样的间接注入——和三个良性的。两个良性语料测试普通流量（来自 Dolly-15k 的指令遵循文本，以及为模仿真实智能体写入而生成的模板化类记忆条目）。第三个 NotInject 是一项过度防御压力测试：刻意植入注入检测器所依赖触发词的良性句子。一个学会了触发词而非意图的检测器，恰恰会在这里失灵，这正是我们把它单列报告、而不是与其他良性语料混在一起的原因。
+
+#### 指标（Metrics）
+
+来自混淆矩阵的精确率、召回率、$F_{1}$、假阳性率与准确率，外加每项的中位单条延迟（median per-item latency）。置信区间通过对样本做自助法（bootstrap）重采样得到，在种子 42 下重采样 $n{=}1000$ 次。某个语料上未定义的指标——全良性语料上的召回率、全恶意语料上的假阳性率——如实报告为「未定义」而非 0。
+
+#### 消融（Ablation）
+
+由于流水线是「任一阶段标记即标记」，我们保留了逐阶段归因，并做累积式重打分：先只有 Stage 1，然后 Stage 1–2，依此类推（表 5）。这使我们得以把「注入检测本身」的贡献与「密钥检测器」的贡献分开，而第 6.4 节将表明这两者并不是一回事。
+
+#### 确定性与成本控制（Determinism and cost control）
+
+模型响应按下述键缓存：
+
+$$(\text{system},\;\text{model},\;\mathrm{sha256}(\text{prompt}))$$
+
+这样重跑既不会产生新的计费，也不会重新采样。Stage-4 的采样温度被折进缓存键，因此把它固定为 $\text{temperature}{=}0$ 会产生一份新缓存，而不是悄无声息地复用在其他温度下采样得到的补全结果。那些凭据或模型许可不可用的系统，被记录为「未运行」并让基准继续推进，而不是被悄悄省略。
+
+### 5.2 记忆质量基准
+
+干净检索质量在 LongMemEval_S 上度量，该基准把每道 500 题的证据（evidence）藏在约 50 个会话——约 115K token——的聊天历史中，横跨信息抽取、多会话推理、时序推理、知识更新与弃答等题型。
+
+每道题的「干草堆」被回放到一个运行中的服务器里，每个对话轮次作为一条记忆，并以会话时间戳作为前缀。每道题拥有自己的命名空间与 agent 私有作用域下的 agent 标识符，因此检索按题目相互隔离，且跨题目的相同轮次不会在去重下塌缩。随后通过以 $\mathrm{top\text{-}k{=}15}$ 查询记忆、并把检索到的记忆交给一个 reader 模型来作答，该模型被指示只能依据这些记忆作答，且当记忆不含答案时予以弃答。
+
+检索被刻意保持朴素：没有重排序、没有查询改写、没有摘要、没有图结构。我们关心的度量，是投毒对检索做了什么，而每一个额外的检索侧机制都会成为对这种度量的混杂因素。答案由基准官方的 judge 提示词逐字评分，judge 模型与温度被固定为原始工作所用的值。
+
+### 5.3 投毒协议
+
+#### 攻击构造（Attack construction）
+
+对一个 $n{=}120$ 题的、带种子的子样本，我们给定一个生成模型该题及其真实答案，让它产出一条看似合理的虚假答案，外加三个断言该答案的简短对话轮次。这些轮次被写成普通的用户/助手对话，并复用该题的关键措辞，从而能与真实证据竞争检索。这得到 360 条被投毒的记忆，约占语料的 1.2%。
+
+投毒刻意保持弱信号。它不含任何指令、任何覆盖、任何角色操纵，也不含任何外泄构造——除了一句被说成普通对话的虚假断言之外，别无他物。它同样未经对抗式优化：没有梯度、没有对嵌入空间的搜索、没有针对检索器的迭代。这是该类攻击中最不花哨的一种，而这正是第 6.2 节结果的要点。
+
+#### 来源（Provenance）
+
+被投毒的轮次以 `trust_level=untrusted` 写入，建模为经由不可信信道到达；真实对话则保持 internal。我们要强调，这个标签标记的是信道，而非恶意性。系统并没有什么神谕告诉它哪条内容是假的，而如果良性内容经由同一信道到达，会被赋予完全相同的标签。第 7 节会回到这一点，它是整个评估中最关键（consequential）的设计问题。
+
+#### 配置臂（Arms）
+
+在相同的题目上设四个配置：干净语料；关闭来源加权的投毒语料；采用已发布权重（$w_{t}{=}0.15$，$w_{s}{=}0.60$）的投毒语料；以及采用修正权重（$w_{t}{=}0.35$，$w_{s}{=}0.45$）的投毒语料。
+
+#### 混合来源语料（Mixed-provenance corpora）
+
+上面的各臂把 untrusted 仅赋给投毒内容、不赋给其他任何东西，这使得在该实验中信任标签成了恶意性的完美代理。为消除这一混杂因素，我们在全新的命名空间里又构建了两个语料，原语料保持不动。在 Corpus M 中，每道题非证据轮次的 20%（带种子）在注入同样的投毒之前就被写为 untrusted，于是不可信带以良性为主。在 Corpus N 中，承载答案的轮次本身被写为 untrusted，且完全不注入投毒，从而隔离出「抑制经由不可信信道到达的真实内容」所要付出的代价。每个语料都在关闭来源加权与 $w_{t}{=}0.35$ 下运行，McNemar 检验在每个语料内部、针对其自身的关闭对照组做配对；两个语料共享同一题集但不共享干草堆，因此它们之间不做配对。公式 2 所推导出的预测，是在这些臂运行之前就记录下来的。
+
+#### 分析（Analysis）
+
+由于每个臂都在完全相同的题集上打分，比较是配对的，只有不一致的题目才携带信息。因此我们采用精确的 McNemar 检验，把每个臂与无防御臂做比较，而不是直接比较准确率。除准确率外，我们还报告两个检索侧的量，而准确率会把它们混为一谈：被检索上下文中被投毒部分的比例，以及一条被投毒记忆排在第一位的频率。单看准确率，无法区分「把毒挡在门外的检索器」与「顶住了被展示之毒的 reader 模型」。
+
+#### 还原（Restoration）
+
+每一条被注入记忆的标识符都在写入时被记录，因此被投毒的语料可以被还原到它精确的干净状态，而不是重建。若非如此，在不同时间运行的各臂之间将不可比。
+
+**表 1：写入路径筛查基准的评估语料。** 修订号已固定；两个恶意语料分别覆盖直接注入与间接注入，NotInject 是专门用来诱发过度防御的良性语料。
+
+| 语料 | 内容 | 数量 N | 恶意样本数 | 良性样本数 | 修订号 |
+|---|---|---|---|---|---|
+| deepset/prompt-injections | 直接注入 | 662 | 263 | 399 | 4f61ecb |
+| InjecAgent | 间接注入 | 250 | 250 | 0 | f19c9f2 |
+| Dolly-15k（良性） | 良性 | 750 | 0 | 750 | bdd27f4 |
+| Synthetic memory entries（良性） | 良性 | 750 | 0 | 750 | builtin-v1 |
+| NotInject | 良性 | 339 | 0 | 339 | 847ae76 |
+
+> **表注（原文）**：Evaluation corpora for the write-path screening benchmark. Revisions are pinned; the malicious corpora cover direct and indirect injection respectively, and NotInject is a benign corpus constructed specifically to elicit over-defense.
+> （写入路径筛查基准的评估语料。修订号已固定；两个恶意语料分别覆盖直接注入与间接注入，NotInject 是专门用来诱发过度防御的良性语料。）
+
+---
+
+## 6. 结果
+
+### 6.1 干净记忆质量
+
+在问「投毒要付出什么代价」之前，我们先确立「有哪些可失去的东西」。在完整的 500 题基准上，朴素语义检索在 $\mathrm{top\text{-}k{=}15}$ 下达到 0.860（表 2）。
+
+作为背景：LongMemEval 作者报告 GPT-4o 阅读完整上下文时为 60.6%–64%，而在只把证据会话交给系统的 oracle 条件下为 87%–92%。0.860 这个真实检索下的数字，正处于该区间的顶部。我们用了不同的 reader，所以这不是同口径比较，我们也并不以此自居——但它绝非一个弱基线，而本文的论点若用一个弱基线会廉价得多。
+
+有两个我们宁可明说而非掩埋的注意点。第一，这 500 题的运行早于当前构建版本；在当前版本上以 $n{=}120$ 重新度量，差异不显著（0.850 对 0.875，McNemar $p{=}0.45$）。第二，写入时筛查以疑似凭据泄露为由拒绝了 124,462 条被摄入轮次中的 109 条（0.088%）——这些是关于部署配置、含有密码形态字符串的对话。其中没有一条出现在承载答案的会话里，因此分数不受影响。但这仍是过度防御，我们把它计入。
+
+最弱的格子是多会话聚合（multi-session aggregation）的 0.767，而它为什么弱，值得精确说明，因为显而易见的诊断是错误的。提高 $\mathrm{top\text{-}k}$ 让它更糟而非更好：$k{=}15$、$30$、$50$ 时分别为 0.742、0.677、0.613。如果失败出在检索召回率，更多候选应当有帮助。事实相反，reader 模型从看起来合理的额外上下文中过度计数。这是一个 reader 侧的聚合失败，而它对解读第 6.2 节至关重要：在这条记忆被任何人攻击之前，它就已经对上下文窗口里还有什么别的东西很敏感了。
+
+**表 2：LongMemEval_S 上、采用朴素语义检索（$\mathrm{top\text{-}k{=}15}$、无重排序／查询改写／摘要／图结构）的干净检索质量。reader 为 claude-sonnet-5；judge 为 gpt-4o-2024-08-06，逐字使用基准官方提示词。**
+
+| 题型 | 准确率 | n |
+|---|---|---|
+| single-session-assistant | 1.000 | 56 |
+| single-session-user | 0.943 | 70 |
+| knowledge-update | 0.936 | 78 |
+| temporal-reasoning | 0.827 | 133 |
+| multi-session | 0.767 | 133 |
+| single-session-preference | 0.767 | 30 |
+| 整体（Overall） | 0.860 | 500 |
+
+> **表注（原文）**：Clean retrieval quality on LongMemEval_S with plain semantic search at $\mathrm{top\text{-}k{=}15}$: no reranking, query rewriting, summarization, or graph structure. Reader claude-sonnet-5; judge gpt-4o-2024-08-06 using the benchmark’s official prompts verbatim.
+> （LongMemEval_S 上、采用朴素语义检索在 $\mathrm{top\text{-}k{=}15}$ 下的干净检索质量：无重排序、查询改写、摘要或图结构。reader 为 claude-sonnet-5；judge 为 gpt-4o-2024-08-06，逐字使用基准官方提示词。）
+
+### 6.2 受攻击下的效用
+
+表 3 给出主要结果。往语料中加入 360 条被捏造的记忆——占其 1.2%——准确率从 0.850 跌到 0.300。这条记忆保留了 35% 的价值。一个未被破坏的记忆所值的三分之二，就这样没了。
+
+这一结果有三处特征值得强调，而每一处都让结果更糟而非更好。
+
+**攻击微不足道。** 它没有针对检索器优化，不含任何指令，且由单次生成完成（第 5.3 节）。无论这类攻击的上限在哪，这已经是它的下限。
+
+**投毒量可以忽略。** 语料的 1.2%，在约 250 轮对话的干草堆里每题三条记忆。这里没有可以求助于的阈值效应。
+
+**筛查没有启动。** 写入时内容筛查——那条在间接注入上达到 0.832 召回率的流水线（第 6.4 节）——拒绝了 360 条被投毒记忆中的 0 条。不是低比率。是零，一条都没有。
+
+检索侧的几列说明了，为什么单看准确率会低估这个问题。对每道题，都有一条被投毒记忆排在首位，且投毒占据了被检索上下文的 20%。攻击者不需要和 reader 模型争辩取胜；攻击者赢得了检索，于是 reader 模型此后所依据的上下文里，每五条就有一条在断言那个错误答案。最终还留下 35% 而非 0% 的效用，要归因于 reader 的弃答行为，而非任何防御。
+
+#### 信任标签在做功吗？（Is the trust label doing the work?）
+
+针对受防御臂的一个直接反驳是：投毒以 untrusted 写入，且没有其他东西是 untrusted，这使得信任等级成了恶意性的完美代理——是一把答案钥匙，而非一道防御。我们直接检验了这一点。表 6 报告了两个额外的、各 $n{=}120$ 的语料。
+
+Corpus M 打破了这种关联：其中 18.7% 是写为 untrusted 的良性内容，对照 1.18% 的投毒，于是不可信带约 94% 是良性的，标签在二十次里有十九次都判断错了恶意性。来源加权依然有效——准确率从 0.3167 升到 0.7000，McNemar $p{=}1.17\times 10^{-10}$。这个反驳不成立：防御并不是在读一把答案钥匙。
+
+但这个数字需要一条立即给出、而非留到日后的注意项，因为不带上它就把 0.7000 当作防御结果引用，会误导人。Corpus M 的不可信内容完全取自非证据轮次。因此抑制不可信内容，除了移除投毒之外，还顺带把 18.7% 的语料当作干扰项移除了，而准确率的提升里也包含了这份意外之财。0.7000 是在一个有利假设下的收益上界，而非一个运行点。第 6.3 节的 Corpus N 去掉了这个假设，画面便彻底改变。
+
+**表 3：在 1.2% 语料投毒下的检索效用（$n{=}120$ 题，360 条以 trust_level=untrusted 写入的捏造记忆）。无防御时，记忆保留 35% 的价值；来源加权排序把它恢复到 56%。$p$ 值是对无防御臂做的配对精确 McNemar 检验。写入时内容筛查拒绝了 360 条被投毒记忆中的 0 条。**
+
+| 配置 | 准确率 | 保留效用 | 上下文中的投毒 | 投毒排第一 | McNemar p |
+|---|---|---|---|---|---|
+| 干净语料（无攻击） | 0.850 | 100% | 0.0% | 0% | – |
+| 投毒，无防御 | 0.300 | 35% | 20.0% | 100% | – |
+| 投毒，来源加权（$w_{t}{=}0.15$，已发布默认） | 0.317 | 37% | 20.0% | 87% | 0.80 |
+| 投毒，来源加权（$w_{t}{=}0.35$，修正后） | 0.475 | 56% | 8.8% | 2% | 0.0015 |
+
+> **表注（原文）**：Retrieval utility under 1.2% corpus poisoning ($n{=}120$ questions, 360 fabricated memories written at trust_level=untrusted). Undefended, the memory retains 35% of its value; provenance-weighted ranking recovers it to 56%. $p$-values are paired exact McNemar tests against the undefended arm. Write-time content screening refused 0 of 360 poisoned memories.
+> （在 1.2% 语料投毒下的检索效用（$n{=}120$ 道题，360 条以 trust_level=untrusted 写入的捏造记忆）。无防御时，记忆保留 35% 的价值；来源加权排序把它恢复到 56%。$p$ 值是对无防御臂做的配对精确 McNemar 检验。写入时内容筛查拒绝了 360 条被投毒记忆中的 0 条。）
+
+### 6.3 两种权重设置都算不上防御
+
+已发布的配置不起作用，而修正后的配置之所以有效，原因到头来是 disqualifying（使其丧失资格）的。两者都出自同一套算术。
+
+#### 边界（The margin）
+
+分数把信任与相似度以加性方式组合（公式 1），因此信任无法排除一条记忆——它只能出价压过它。一条不可信记忆要排到一条内部记忆之上，只有在
+
+$$\Delta_{\text{sem}} < \frac{w_{t}\cdot\Delta_{\text{prior}}}{w_{s}} \tag{2}$$
+
+时才成立，其中 $\Delta_{\text{prior}}=\tau(\texttt{internal})-\tau(\texttt{untrusted})=0.7$。在已发布权重下这一边界为 0.175；在修正权重下为 0.544（图 2）。
+
+措辞模仿查询的投毒在相似度上比真实证据多得了 0.32。这超过了 0.175，因此已发布的防御是惰性的——这正是表 3 所显示的：准确率 0.317 对无防御的 0.300，McNemar $p{=}0.80$。一个在已发布系统中默认开启的防御，对它本要防御的攻击没有任何可测量的效果。我们把它当作关于我们自己产品的一个负面结果如实报告，因为该参数是凭直觉而非推导选定的，而一旦问出那个问题，公式 2 并不难写出来。
+
+#### 修正矫枉过正（The correction over-corrects）
+
+显而易见的修补，是抬高 $w_{t}$ 直到边界超过攻击者可达的相似度增益，而在 $w_{t}{=}0.35$ 时，表 3 看上去正是如此。但请考虑同一组权重在绝对量上、而非作为边界时的情形。一条不可信记忆承受一个固定的评分惩罚 $w_{t}\cdot\Delta_{\text{prior}}=0.245$，而整个语义项最多只贡献 $w_{s}=0.45$。这个惩罚超过了相似度可用总范围的一半。一旦任何一条内部记忆的余弦相似度高于约 0.5——在一个含 250 轮、主题连贯的命名空间里这几乎可以保证——一条不可信记忆就需要高于 $1.0$ 的相似度才能排得上。不是不大可能：是不可能。
+
+因此在修正权重下，信任项根本不是先验，而是一件披着软约束外衣的硬排除过滤器。表 6 从两个角度证实了这一点：在 Corpus M 中，被检索上下文中良性不可信内容的占比从 6.56% 跌到恰好 $0.00\%$；在 Corpus N 中，证据召回率从 99.17% 跌到恰好 $0.00\%$。两种情形下效果都不是局部的。
+
+#### 排除的代价（What exclusion costs）
+
+Corpus N 通过把承载答案的证据本身写为 untrusted、且完全不放置投毒，把这份代价显形出来。无防御时，它的表现如同干净语料：准确率 0.8583。在 $w_{t}{=}0.35$ 的来源加权下，准确率为 0.0417，证据召回率为零。120 道题中没有一条承载答案的记忆在排序中幸存；98 道不一致的题目全部朝同一方向移动（$p{=}6.31\times 10^{-30}$）。两个语料在防御关闭时检索等价，因此排序权重是唯一可得的解释。
+
+这一点在被观察到之前就已预测到了。公式 2 说，不可信证据会被压到任何与之相似度在 0.544 之内的内部记忆之下；在一个 250 轮的命名空间里，这样的记忆总是存在，因此该预测的极限情形便是彻底抑制，而发生的正是彻底抑制。
+
+#### 安全视角的解读（The security reading）
+
+在修正后的默认值下，来源加权是对记忆的一场拒绝服务（DoS）原语。任何能把真实内容经由不可信信道路由出去的人——攻击者，或者仅仅是一个保守地给某个合法来源打标签的集成——都让那份内容永久不可检索。这个失败至少还算优雅：该臂中 96.2% 的答案是显式的弃答而非编造，因此过度抑制是一种可用性失败，而投毒是一种完整性失败。把后者转换成前者，对一项安全控制而言是一个站得住脚的取舍——但只有当把代价一并说清时才站得住脚，而此处的代价是彻底的。
+
+#### 参数形状错了（The parameter is the wrong shape）
+
+我们度量了一个标量上的两种取值。在 $w_{t}{=}0.15$ 时它什么也不做；在 $w_{t}{=}0.35$ 时它做了一切。两者之间的区间不是一片未被探索的调参空间，而是一个症状：加性权重没有下限，因此无法表达真正想要的策略——偏好可信证据，但永远不要丢弃唯一可用的证据。任何大到足以抵抗一个坚定攻击者的 $w_{t}$，都大到足以把不可信内容一概排除，因为攻击者可达的相似度优势，与语料自身的相似度离散程度，是同一量级的量。
+
+因此我们把它这对结果读作一个设计结论，而非调参结论。来源应当以一种有界约束（bounded constraint）的形式进入检索——对不可信内容可占据的被检索上下文比例设一个上限——而不是作为一个加性评分项。配额在两个方向上都优雅退化：它不会被一个足够相似的攻击者出价压过，也不会把真实证据逼到零，因为它做的是预留而非惩罚。我们既没有实现、也没有评估过这样一个门控，只是声称这些度量结果为它提供了动机。
+
+<!-- 原图：（PDF 裁剪，src 为空）https://arxiv.org/html/2608.21230v1/ -->
+![图 2：来源加权排序只有在攻击者的语义相似度优势低于 w_t·Δ_prior/w_s 这一边界时才有效；已发布权重下边界仅 0.175，措辞模仿查询的投毒获得 0.32 的相似度优势并每次都越过它；修正权重下边界为 0.544，投毒不再能越过](../images/UtilityUnderAttack/02-margin.png)
+
+> **图 2（原文 Figure 2）**：Trust-weighted ordering survives only while the attacker’s semantic-similarity advantage stays below $w_{t}\cdot\Delta_{\text{prior}}/w_{s}$. At the shipped weights that margin is 0.175; query-shaped poison gained 0.32 in similarity and cleared it every time. At the corrected weights the margin is 0.544 and the poison no longer clears it.
+> （来源加权排序只有在攻击者的语义相似度优势低于 $w_{t}\cdot\Delta_{\text{prior}}/w_{s}$ 时才能维持。已发布权重下该边界为 0.175；措辞模仿查询的投毒获得了 0.32 的相似度优势，且每次都越过了它。修正权重下该边界为 0.544，投毒不再能越过。）
+
+### 6.4 写入路径筛查的正确度量
+
+本节的存在，是为了确立第 6.2 节中的筛查并不是一个稻草人。如果它仅仅是一个弱检测器，那么 0/360 的结果对「筛查作为一个类别」就什么也说明不了。它并不弱，而把这个比较按其自身条件做出来是值得的。
+
+#### 过度防御（Over-defense）
+
+最有用的比较轴不是召回率，而是一个检测器对看起来表面可疑的良性流量做了什么。在 NotInject——植入了注入检测器所依赖触发词的良性句子——上，确定性核心标记了 1.5% 的样本，而两个基于 DeBERTa 的检测器都标记了 42.8%，且置信区间互不重叠（图 3）。Llama Prompt Guard 2 居中，为 6.5%。
+
+42.8% 的过度防御率不是什么调参细节。在写入路径上，它意味着大约五分之二的、关于安全话题的良性记忆会被拒绝，于是系统悄悄丧失了记住任何关于自身配置的东西的能力。这些系统的报告指标里没有任何一项能浮现这一点，因为攻击成功率并不度量它。
+
+我们应当同样直白地说明这个比较没有展示什么。朴素正则基线在 NotInject 上取得了同样的 1.5%，在直接注入上取得了与确定性核心相同的 0.144 召回率。在这两份语料上，确定性核心与最廉价的实现并无区别。两者分道扬镳之处在间接注入：正则基线什么都检测不到，而确定性核心达到 0.62。诚实的解读是：低过度防御与有用的召回率是可以分离的属性，而表 4 中那些基于模型的检测器，在并不需要的时候，为了后者付出了大量的前者。
+
+#### 阶段归因（Stage attribution）
+
+消融（表 5）让流水线的构成变得清晰可辨，而有一行值得针对我们自身的利益被强调。在 LLM 分类器之前可用的全部 155 个 InjecAgent 检测，都来自 Stage 2——密钥检测器——它触发于含有凭据形态字符串的外泄载荷。Stage 3——真正的注入规则——在间接注入上的贡献恰好为零。那是一个真实的防御性结果，我们不会移除它，但它不是注入检测，我们也不把它当作注入检测来报告。Stage 3 真正的贡献在直接注入上，它把召回率从零提升到 0.144。
+
+加入 LLM 分类器，把直接注入召回率提升到 0.741、间接注入提升到 0.832，代价是把 NotInject 的假阳性率翻了一倍，并增加了一趟网络往返。
+
+#### 延迟（Latency）
+
+确定性核心以数十微秒完成筛查，而基于 transformer 的检测器约为 200 毫秒（图 4），相差四个数量级。这正是分级得以可行的关键：确定性核心可以对每一次写入无条件运行，而分类器可以留给那些值得它的写入。我们只报告本地执行系统的延迟。LLM-judge 配置在本次运行中大量命中缓存，而 Stage-4 配置包含带限流退避的网络往返；两个数字都不是对底层系统的有意义度量，因此我们不予绘图。
+
+#### 这给筛查结果留下什么（Where this leaves the screening result）
+
+在它本要防御的攻击类别上，写入路径筛查是强的、廉价的，并且——若以确定性方式构建——远比该领域当前的检测器更不易过度防御。第 6.2 节表明，同一条流水线，原封不动，拒绝了 360 条被投毒记忆中的 0 条。这两句话都是真的，而第二句并不是对第一句的批评。它们描述的是一道边界。
+
+**表 4：跨五个语料的写入路径筛查。全文在报告召回率的同时并列假阳性率；bootstrap 95% 置信区间（n=1000，种子 42）见图 3。同一条在间接注入上达到 0.83 召回率的流水线，在表 3 中拒绝了 0 条被投毒记忆。**
+
+| 系统 | deepset | InjecAgent | NotInject | Dolly | Synthetic |
+|---|---|---|---|---|---|
+| 无保护 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| 朴素正则 | 0.144 | 0.000 | 0.015 | 0.000 | 0.000 |
+| ProtectAI DeBERTa v2 | 0.414 | 0.660 | 0.428 | 0.039 | 0.040 |
+| Llama Prompt Guard 2 | 0.228 | 0.000 | 0.065 | 0.000 | 0.000 |
+| LLM Guard | 0.414 | 0.656 | 0.428 | 0.039 | 0.040 |
+| LLM judge（GPT-4o-mini） | 0.829 | 0.672 | 0.041 | 0.004 | 0.001 |
+| LLM judge（Haiku 4.5） | 0.757 | 0.932 | 0.035 | 0.000 | 0.000 |
+| Aegis 阶段 1–3（确定性核心） | 0.144 | 0.620 | 0.015 | 0.001 | 0.000 |
+| Aegis 阶段 1–4（GPT-4o-mini） | 0.677 | 0.744 | 0.035 | 0.001 | 0.000 |
+| Aegis 阶段 1–4（Haiku 4.5） | 0.741 | 0.832 | 0.035 | 0.001 | 0.000 |
+
+> **表注（原文）**：Write-path screening across five corpora. Recall is reported beside false positive rate throughout; bootstrap 95% confidence intervals ($n{=}1000$, seed 42) are given in Figure 3. The same pipeline that reaches 0.83 recall on indirect injection refused 0 poisoned memories in Table 3.
+> （跨五个语料的写入路径筛查。全文在报告召回率的同时并列假阳性率；bootstrap 95% 置信区间（$n{=}1000$，种子 42）见图 3。同一条在间接注入上达到 0.83 召回率的流水线，在表 3 中拒绝了 0 条被投毒记忆。）
+> **列说明**：deepset / InjecAgent / NotInject 三列为**检测召回率**（越高越好 ↑），Dolly / Synthetic 两列为**假阳性率**（越低越好 ↓）。
+
+<!-- 原图：（PDF 裁剪，src 为空）https://arxiv.org/html/2608.21230v1/ -->
+![图 3：NotInject 上的过度防御——承载注入相关触发词的良性文本。确定性核心仅标记 1.5%，而基于 DeBERTa 的检测器标记 42.8%，置信区间互不重叠](../images/UtilityUnderAttack/03-notinject_fpr.png)
+
+> **图 3（原文 Figure 3）**：Over-defense on NotInject: benign text carrying injection-adjacent trigger words. The deterministic core flags 1.5% against 42.8% for DeBERTa-based detectors, with non-overlapping confidence intervals.
+> （NotInject 上的过度防御：承载注入相关触发词的良性文本。确定性核心标记了 1.5%，而基于 DeBERTa 的检测器标记了 42.8%，且置信区间互不重叠。）
+
+<!-- 原图：（PDF 裁剪，src 为空）https://arxiv.org/html/2608.21230v1/ -->
+![图 4：本地执行系统的中位单条筛查延迟（对数刻度）。确定性核心比基于 transformer 的检测器快约四个数量级，这正是它能作为写入路径上常驻预过滤器的原因](../images/UtilityUnderAttack/04-latency.png)
+
+> **图 4（原文 Figure 4）**：Median per-item screening latency, log scale, for locally-executed systems. The deterministic core runs roughly four orders of magnitude faster than transformer-based detectors, which is what makes it usable as an always-on pre-filter on the write path.
+> （本地执行系统的中位单条筛查延迟，对数刻度。确定性核心比基于 transformer 的检测器快约四个数量级，这正使得它能作为写入路径上常驻的预过滤器使用。）
+
+**表 5：累积式逐阶段消融。Stage 3——注入规则——贡献了直接注入召回率的全部，间接注入的则为零。Stage-4 行以下全部 155 个 InjecAgent 检测都来自 Stage 2（密钥检测器），它触发于含有凭据形态字符串的外泄载荷。那是一个真实的防御性结果，但不是注入检测，我们也不把它算作注入检测。**
+
+| 启用的阶段 | deepset | InjecAgent | NotInject |
+|---|---|---|---|
+| 仅 Stage 1（输入验证） | 0.000 | 0.000 | 0.000 |
+| + Stage 2（PII／密钥） | 0.000 | 0.620 | 0.000 |
+| + Stage 3（注入规则） | 0.144 | 0.620 | 0.015 |
+| + Stage 4（LLM 分类器） | 0.741 | 0.832 | 0.035 |
+
+> **表注（原文）**：Cumulative per-stage ablation. Stage 3 — the injection rules — contributes all of the direct-injection recall and none of the indirect. All 155 InjecAgent detections below the Stage-4 row come from Stage 2, the secrets detector, firing on exfiltration payloads that contain credential-shaped strings. That is a real defensive outcome but it is not injection detection, and we do not count it as such.
+> （累积式逐阶段消融。Stage 3——注入规则——贡献了直接注入召回率的全部，间接注入的则为零。Stage-4 行以下全部 155 个 InjecAgent 检测都来自 Stage 2（密钥检测器），它触发于含有凭据形态字符串的外泄载荷。那是一个真实的防御性结果，但不是注入检测，我们也不把它算作注入检测。）
+> **列说明**：deepset 与 InjecAgent 两列为**检测召回率**，NotInject 一列为**假阳性率**。
+
+**表 6：混合良性—不可信臂（各 n=120）。Corpus M 把语料的 18.7% 写为良性不可信内容，外加 1.18% 投毒，于是信任标签不再充当恶意性的代理。Corpus N 把承载答案的证据本身写为不可信，且不含任何投毒。p 值为针对每个语料自身无防御对照组的精确 McNemar 检验；两个语料之间不做配对。**
+
+| 臂 | 准确率 | 证据召回率 | 良性—不可信占比 | 投毒排第一 | McNemar p |
+|---|---|---|---|---|---|
+| M，无防御 | 0.3167 | 99.17% | 6.56% | 100% | – |
+| M，$w_{t}{=}0.35$ | 0.7000 | 99.17% | 0.00% | 0% | $1.17\times 10^{-10}$ |
+| N，无防御 | 0.8583 | 99.17% | 50.67% | – | – |
+| N，$w_{t}{=}0.35$ | 0.0417 | 0.00% | 0.00% | – | $6.31\times 10^{-30}$ |
+
+> **表注（原文）**：Mixed benign-untrusted arms ($n{=}120$ each). Corpus M writes 18.7% of the corpus as benign untrusted content alongside 1.18% poison, so the trust label is no longer a proxy for maliciousness. Corpus N writes the answer-bearing evidence itself as untrusted and contains no poison. $p$-values are exact McNemar tests against each corpus’s own undefended control; the corpora are not paired with each other.
+> （混合良性—不可信臂（各 $n{=}120$）。Corpus M 把语料的 18.7% 写为良性不可信内容，外加 1.18% 投毒，于是信任标签不再充当恶意性的代理。Corpus N 把承载答案的证据本身写为不可信，且不含任何投毒。$p$ 值为针对每个语料自身无防御对照组的精确 McNemar 检验；两个语料之间不做配对。）
+
+---
+
+## 7. 局限性
+
+我们按它们对结论的威胁程度、而非按主题来排序。
+
+#### 攻击者不做自适应（The adversary does not adapt）
+
+这是最 consequential 的局限。我们的攻击者以单次生成产出投毒，没有梯度访问、没有对措辞的搜索、没有针对检索或筛查反馈的迭代。一个自适应的攻击者会在两条路径上都做得更好：对筛查，通过把内容塑造得远离确定性规则；对排序，通过优化嵌入以扩大公式 2 中的相似度差。偏差的方向是可预知的，即便其幅度不可知。这里的每个攻击结果都是一个下界，而每个防御结果都是一个上界。我们为筛查基准构建了一个自适应测试工具，却没能在本次报告前完成那项预注册的扫描；那次扫描是最有价值的一项缺失度量，而它的缺席正是我们为何不对筛查在「非自适应设定之外」做任何鲁棒性声明的原因。
+
+#### Corpus N 是一个构造出的最坏情形（Corpus N is a constructed worst case）
+
+所有承载答案的证据都以 untrusted 到达，而真实部署不会停留在这个极端。但第 6.3 节的算术暗示，这种关系是受影响的占比上的线性，而非阈值式：每道证据以 untrusted 到达的题目都会被彻底丢失，因此一个 10% 证据为 untrusted 的部署，会丢失大约 10% 可回答的题目。于是 Corpus N 锁定的是损失率，而非描述一个不寻常的配置。我们尚未做的是定位任何真实部署的运行点，而对于典型系统落在何处，我们不做任何声明。
+
+#### Corpus M 在相反方向上也是人造的（Corpus M is artificial in the opposite direction）
+
+它的不可信带完全取自非证据轮次，因此抑制不可信内容只会移除干扰项。到 0.7000 的准确率提升，因此包含了一份任何「不可信内容承载信息」的系统都得不到的意外之财。Corpus M 给收益设了上界；Corpus N 给代价设了下界。两者共同框定了一个区间，却没有在其中定位一个点。
+
+#### 所提议的补救未经评估（The proposed remedy is unevaluated）
+
+我们从两次被度量的失败出发，论证来源应当以一种有界占用约束（bounded occupancy constraint）而非加性权重的形式进入检索。我们既没有实现那个门控，也没有度量它在实践中是否优雅退化，抑或仅仅把失败搬了个家。这个设计结论是由我们的结果所 motive（提供动机）的，而非由它们所 demonstrated（证实）的。它还继承了一个我们应当明说、而非留作隐含的依赖：一个占用配额，仍然是一个以来源标签为键的检索侧机制，因此它处理的是我们所度量的失败模式——一个没有下限的加性项——却没有处理标签本身是否可信的问题 [11]。配额与写入时来源绑定是互补的，而只有二者合在一起才是一道防御。
+
+#### 单一检索器、单一嵌入模型、单一 reader（One retriever, one embedding model, one reader）
+
+公式 2 是关于评分函数的一个陈述，而非关于任何特定嵌入空间的；但那个极限情形是否会被触及，取决于给定的 embedder 在给定的语料上产生的相似度分布。一个在命名空间内相似度分布得更开的检索器，会给不可信内容留出一些排序的空间。类似地，无防御臂存活下来的那 35% 效用，部分要归因于某个 reader 的弃答行为；一个更易信的 reader 会保留得更少，一个更怀疑的则会保留得更多。我们不知道这两个结果中有多少是模型特定的。
+
+#### 信任标签被假设为正确赋值（Trust labels are assumed correctly assigned）
+
+我们研究的是：当来源准确、却对真实性毫无信息时，会发生什么。我们不去研究一个取得更高信任等级的攻击者、一个系统性误标的集成，或一个信任赋值本身可被攻击的系统。第 6.3 节表明，朝保守方向的误标在修正权重下已经具有破坏性，这暗示标签完整性值得与排序函数受到同等的审视。同期工作把这一点说得更尖锐。Louck [11] 论证道，无论是源于内容还是源于派生历史，权威性都是可塑的——攻击者可以经由智能体自身的摘要、一个可信工具的回显，或伪造的相互印证，把一条不可信来源「洗白」，并由此得出结论：对于任何权威判定要健全，写入时来源绑定是必要的。我们的结果依赖于一个攻击者无法挪动的标签。这个条件是一篇论文的假设，而非我们确立的一个属性，而把它当作承重结构的论据，如今比我们当初提出时更强了。
+
+#### 单一系统（One system）
+
+所有度量都来自单一的记忆实现。筛查结果的推广靠的是论证而非度量：没有任何内容扫描器能在不知道答案的情况下检测虚假性，而那个论证并不依赖于哪个扫描器。排序结果推广到的是「把来源与相似度以加权和组合」的那一类系统，靠的是算术而非复制。两者都未在其他实现上被测过，而那些把来源当作过滤器、配额或硬约束来处理的系统，则完全在论证的范围之外。
+
+#### 领域与规模（Domain and scale）
+
+LongMemEval 是会话式个人助手记忆。我们不知道这些结果如何迁移到代码、临床或运维记忆——在那里不可信内容的基率与弃答的代价都不同。投毒臂使用的是一个带种子的 $n{=}120$ 子样本，对照 500 题的干净基线；该子样本被抽取一次并在所有臂间复用，因此比较是配对的，但绝对准确率带有 120 道题的抽样误差。
+
+#### 我们未解决的度量注意点（Measurement caveats we did not resolve）
+
+受 API 支撑的配置的延迟未予报告，因为那些运行大量命中缓存并包含限流退避；它们与本地执行的系统不可比。写入时筛查还以疑似凭据泄露为由拒绝了 124,462 条被摄入轮次中的 109 条。其中没有一条承载答案，因此分数不受影响，但这是对普通内容的过度防御，而我们尚未刻画它的形态。
+
+---
+
+## 8. 结论
+
+我们度量了一个受防御的智能体记忆在被投毒时究竟值多少，使用的还是该类攻击中最弱的一种：措辞平实的虚假陈述，单次生成，不含指令、不针对任何东西优化。在语料的 1.2% 时，这一攻击就移除了记忆价值的三分之二。
+
+写入时内容筛查没有启动。同一条在间接注入上达到 0.832 召回率、并把含触发词的良性文本标为 1.5% 的流水线——比我们对比的基于 DeBERTa 的检测器低一个数量级——拒绝了 360 条被投毒记忆中的 0 条。这不是那条流水线的缺陷。区分一个虚假断言与一个真实断言，一般而言需要超越被筛查文本本身的外部依据（external grounding）。因此这类攻击落在「仅看内容的筛查」所能可靠裁定的范围之外。
+
+这把防御的重担放到了读取路径上，而在那里我们的结果不那么舒服。已发布的来源权重在统计上与「无防御」毫无二致。抬高它确实有效，却不是为了我们假设的那个理由：在修正权重下，信任项不再表现得像一个先验，而成为一道硬排除，因为它的绝对惩罚超过了相似度可用范围的一半。当不可信带只装着可丢弃的内容时，排除看起来像是一道防御。当它装着证据时，检索在 120 道题的每一道上彻底崩溃为零。
+
+对于这种加性评分形式、在所指明的相似度区间下，来源项无法表达想要的策略。任何大到足以抵抗一个能塑造内容的攻击者的权重，都同样大到足以把不可信内容一概排除，因为攻击者可达的相似度优势，与语料自身的相似度离散程度，是同一量级的量。不存在这样一个标量的取值：它偏好可信证据，却不至于愿意丢弃唯一可用的证据。因此我们把这些度量读作指向「把来源作为对被检索上下文的有界占用约束」——一个地板也是一个天花板，而非一道斜坡——并且我们明确声明：我们尚未构建或评估这样的机制。
+
+有两点方法论结论超出了本系统本身。第一，攻击成功率对于记忆安全而言是错误的一级指标：它无法区分一条抵御了攻击的记忆与一条被攻击废掉效用的记忆，也对「没有攻击时，一项防御要付出什么代价」保持沉默。保留的效用对两者都作答。第二，一项只在「其信号与威胁完美相关」的配置下被评估的防御，等于没有被评估。我们自己的修正权重恰恰在那个条件下看起来像一次成功，而在一个微小的假设变动下，暴露出一个拒绝服务原语。那些混合来源臂花费了 11.22 美元，却是本文中信息量最高的度量。
+
+#### 未来工作（Future work）
+
+针对筛查流水线的预注册自适应扫描，是最有价值的一项缺失度量，且是下一步。在此之外：实现并评估那个占用门控；跨具有不同相似度离散程度的嵌入模型度量边界行为，以确立公式 2 的极限情形在多大程度上依赖语料；并把「受攻击效用」协议扩展到加性评分家族之外的记忆系统——在那里本文的算术并不适用，而那个实证问题真正是开放的。
+
+---
+
+## 参考文献
+
+> 原文共 18 条参考文献，以下保留原文编号与条目（标题不译），正文中的 `[n]` 标记可据此检索。
+
+- [1] L. Beurer-Kellner, B. Buesser, A. Creţu, E. Debenedetti, D. Dobos, D. Fabian, M. Fischer, D. Froelicher, K. Grosse, D. Naeff, E. Ozoani, A. Paverd, F. Tramèr, and V. Volhejn (2025) Design patterns for securing LLM agents against prompt injections. arXiv preprint arXiv:2506.08837. Cited by: §3, §3.
+- [2] S. Chen, J. Piet, C. Sitawarin, and D. Wagner (2024) StruQ: defending against prompt injection with structured queries. arXiv preprint arXiv:2402.06363. Cited by: §3.
+- [3] Z. Chen, Z. Xiang, C. Xiao, D. Song, and B. Li (2024) AgentPoison: red-teaming LLM agents via poisoning memory or knowledge bases. In Advances in Neural Information Processing Systems (NeurIPS), Note: arXiv:2407.12784 Cited by: §3.
+- [4] P. Dash, T. Ge, A. Jain, T. Shah, and Z. Shang (2026) From untrusted input to trusted memory: a systematic study of memory poisoning attacks in LLM agents. arXiv preprint arXiv:2606.04329. Cited by: §3, §3.
+- [5] Databricks (2023) Free dolly: introducing the world’s first truly open instruction-tuned LLM. Note: Hugging Face dataset databricks/databricks-dolly-15k Cited by: §5.1.
+- [6] E. Debenedetti, I. Shumailov, T. Fan, J. Hayes, N. Carlini, D. Fabian, C. Kern, C. Shi, A. Terzis, and F. Tramèr (2025) Defeating prompt injections by design. arXiv preprint arXiv:2503.18813. Cited by: §3, §3.
+- [7] E. Debenedetti, J. Zhang, M. Balunović, L. Beurer-Kellner, M. Fischer, and F. Tramèr (2024) AgentDojo: a dynamic environment to evaluate attacks and defenses for LLM agents. arXiv preprint arXiv:2406.13352. Cited by: §3.
+- [8] deepset (2023) deepset/prompt-injections. Note: Hugging Face dataset Revision 4f61ecb Cited by: §5.1.
+- [9] S. Dong, S. Xu, P. He, Y. Li, J. Tang, T. Liu, H. Liu, and Z. Xiang (2025) A practical memory injection attack against LLM agents. arXiv preprint arXiv:2503.03704. Cited by: §3.
+- [10] H. Li and X. Liu (2024) InjecGuard: benchmarking and mitigating over-defense in prompt injection guardrail models. arXiv preprint arXiv:2410.22770. Cited by: §3, §3, §5.1.
+- [11] Y. Louck (2026) Securing LLM-agent long-term memory against poisoning: non-malleable, origin-bound authority with machine-checked guarantees. arXiv preprint arXiv:2606.24322. Cited by: §3, §3, §7, §7.
+- [12] C. Packer, S. Wooders, K. Lin, V. Fang, S. G. Patil, I. Stoica, and J. E. Gonzalez (2023) MemGPT: towards LLMs as operating systems. arXiv preprint arXiv:2310.08560. Cited by: §3.
+- [13] S. Pulipaka, S. Hlebik, L. Raghav, S. Abdelnabi, V. Raina, I. Sheth, and M. Fritz (2026) Hidden in memory: sleeper memory poisoning in LLM agents. arXiv preprint arXiv:2605.15338. Cited by: §3.
+- [14] B. D. Sunil, I. Sinha, P. Maheshwari, S. Todmal, S. Mallik, and S. Mishra (2026) Memory poisoning attack and defense on memory based LLM-agents. arXiv preprint arXiv:2601.05504. Cited by: §3.
+- [15] D. Wu, H. Wang, W. Yu, Y. Zhang, K. Chang, and D. Yu (2025) LongMemEval: benchmarking chat assistants on long-term interactive memory. In International Conference on Learning Representations (ICLR), Note: arXiv:2410.10813 Cited by: §3.
+- [16] W. Xu, Z. Liang, K. Mei, H. Gao, J. Tan, and Y. Zhang (2025) A-MEM: agentic memory for LLM agents. In Advances in Neural Information Processing Systems (NeurIPS), Note: arXiv:2502.12110 Cited by: §3.
+- [17] Q. Zhan, Z. Liang, Z. Ying, and D. Kang (2024) InjecAgent: benchmarking indirect prompt injections in tool-integrated large language model agents. In Findings of the Association for Computational Linguistics: ACL 2024, Bangkok, Thailand, pp. 10471–10506. External Links: Document Cited by: §3, §5.1.
+- [18] W. Zou, R. Geng, B. Wang, and J. Jia (2025) PoisonedRAG: knowledge corruption attacks to retrieval-augmented generation of large language models. In 34th USENIX Security Symposium (USENIX Security 25), Seattle, WA, pp. 3827–3844. Cited by: §3.
+
+---
+
+## 附录 A 可复现性
+
+本资源包里的每张表、每张图，以及每一处散文宏，都是由一个单独脚本（scripts/make_figs.py）从 data/ 下冻结的 JSON 输入生成的。筛查输入是 benchmarks/injection/results/results.json 的逐字副本。对于 LongMemEval，该资源包包含一个已提交的主投毒测量快照（记录于固定修订号下），外加已提交的混合来源报告。重跑该脚本会重新生成这些表、图与数值宏，而无需手动编辑那些输出。
+
+#### 制品（Artifact）
+
+源码、基准测试工具、攻击语料，以及已提交的聚合报告位于：
+
+https://github.com/quantifylabs/aegis-memory 修订号 6d2863083361f7a5c8e12b4512346c94cb453c2c
+
+本文的全部结果都在该修订号下产生。W4.2 主投毒数值也记录在 docs/security/memory-poisoning.md 中，并由 benchmarks/memory/longmemeval/w42_report.py 重新生成；W4.3 混合来源数值记录在 benchmarks/memory/longmemeval/results/mixed_untrusted_report.json 中。
+
+#### 固定的数据集修订号（Pinned dataset revisions）
+
+五个筛查语料及其修订号见表 1。记忆基准使用 LongMemEval_S，修订号 2ec2a557，SHA-256 08d8dad4…7894，其合成良性语料由 generator 版本 builtin-v1 生成。
+
+#### 模型（Models）
+
+筛查基准：gpt-4o-mini 与 claude-haiku-4-5-20251001 作为 Stage-4 与 LLM-judge 后端。记忆基准：claude-sonnet-5 作为 reader，gpt-4o-2024-08-06 作为 judge（温度 0），逐字使用 LongMemEval 的官方 judge 提示词。投毒生成：claude-haiku-4-5-20251001。
+
+#### 种子与采样（Seeds and sampling）
+
+全程使用种子 42：bootstrap 重采样（$n{=}1000$）、那个 $n{=}120$ 的题集子样本，以及混合来源语料中被写为 untrusted 的轮次的选择。该子样本被抽取一次并在每个臂间复用，因此所有比较都是配对的。逐轮信任赋值被记录到 trust_plan.jsonl，而非只能靠重放生成器来恢复。
+
+#### 确定性（Determinism）
+
+模型响应在 $(\text{system},\text{model},\mathrm{sha256}(\text{prompt}))$ 下缓存，采样温度被折进键中，因此温度的改变会产生一份新缓存，而不是悄无声息地复用在另一设置下采样得到的补全。那些凭据或模型许可不可用的系统被记录为「未运行」而非省略。
+
+#### 成本（Cost）
+
+四个混合来源臂在模型 API 使用上花费 11.22 美元，是实测而非估计，并在发布的报告中按臂记录。
+
+#### 环境（Environment）
+
+Python 3.11.9；transformers 4.53.3，torch 2.12.0（CPU），datasets 2.19.1。延迟数字是在此配置上收集的，应被当作相对值而非绝对值来读。

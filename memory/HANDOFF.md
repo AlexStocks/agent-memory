@@ -2,6 +2,12 @@
 
 > 生成时间：2026-09-18 19:10（断电断网前）
 > 交接原因：本机十分钟后停电断网。进度 **2/7**，源料在 `/tmp` 已随断电丢失，需按下方「恢复步骤」重建。
+>
+> **✅ 2026-09-18 19:35 更新：本 handoff 任务已在 Windows 新环境（D:\test\github\agent-memory）完成。**
+> - 7/7 译文全部落地并通过 `check_trans.py` 校验（PASS）
+> - 源料已用重写后的 `memory/series6/tools/fetch_arxiv_sources.py`（urllib + 自包含转换器，不再依赖 arxiv-fulltext-cn-translation skill）重建于 `D:/tmp/arxiv7/`
+> - 总结见 `starting/第06篇_有界召回篇/第06篇_同期论文译文总结.md`
+> - RESEARCH_LOG 已补 7 条译文链接
 
 ---
 
