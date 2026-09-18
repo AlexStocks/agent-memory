@@ -19,11 +19,8 @@ OUT = HERE / "第6篇_发布版_带复制按钮.html"   # 产物 2：预览页
 
 # 占位符 key -> (显示用图片路径, 占位框标题, 占位框副标题)
 IMG_MAP = {
-    "img1": ("publish_images/图1_记忆树工作流.png", "图 1", "Weighted Memory Tree 的状态驱动工作流"),
-    "img2": ("publish_images/图2_记忆投毒示例.png", "图 2", "简化版记忆投毒场景：红色节点为投毒记忆"),
-    "img3": ("publish_images/图3_事件级结构.png", "图 3", "StructMem 的层次化记忆组织：事件级绑定 + 跨事件整合"),
-    "img4": ("publish_images/图4_压缩锯齿.png", "图 4", "Memento 总览：分块、memento 生成与锯齿形 KV"),
-    "img5": ("publish_images/图5_KV轨迹三例.png", "图 5", "三个具体问题上的 KV cache 轨迹对比"),
+    "img1": ("publish_images/图1_再获取成本.png", "图 1", "压缩后的再获取成本：完成度没掉，检索调用翻了三倍"),
+    "img2": ("publish_images/图2_事件级扩展.png", "图 2", "查询时沿事件线索扩展：补回缺失的支撑证据"),
 }
 
 article = TEMPLATE.read_text(encoding="utf-8")
@@ -176,20 +173,16 @@ PAGE = """<!DOCTYPE html>
     <div class="card">
       <h2>图片对照表</h2>
       <table class="map">
-        <tr><td>图 1</td><td>WMT 状态驱动工作流<br><code>图1_记忆树工作流.png</code></td></tr>
-        <tr><td>图 2</td><td>记忆投毒示例<br><code>图2_记忆投毒示例.png</code></td></tr>
-        <tr><td>图 3</td><td>StructMem 事件级结构<br><code>图3_事件级结构.png</code></td></tr>
-        <tr><td>图 4</td><td>Memento 总览与压缩锯齿<br><code>图4_压缩锯齿.png</code></td></tr>
-        <tr><td>图 5</td><td>KV 轨迹三例<br><code>图5_KV轨迹三例.png</code></td></tr>
+        <tr><td>图 1</td><td>压缩后的再获取成本<br><code>图1_再获取成本.png</code><br>取自 CompressionCost Figure 2</td></tr>
+        <tr><td>图 2</td><td>查询时事件级扩展<br><code>图2_事件级扩展.png</code><br>取自 RippleMem Figure 2</td></tr>
       </table>
       <p style="margin:10px 0 0;font-size:12px;line-height:1.7;color:#8A94A6;">
         文件在 <code>publish_images/</code>，已统一压到 1280px 宽以内。<br>
-        备用图 <code>图6_token消耗（备用）.png</code>（StructMem token 消耗曲线）本轮未放进正文，可在第 3 节替换图 3 使用。
+        旧版五张图（记忆树工作流 / 记忆投毒 / StructMem 结构 / 压缩锯齿 / KV 轨迹）随正文改版停用，仍留在目录里备用。
       </p>
       <div class="warn">
-        <strong>两张图的手机端风险</strong><br>
-        <b>图 1</b> 是竖向长图（960×1894），在手机上会占很长一段；若觉得压稿，建议只保留上半部分的工作流结构。<br>
-        <b>图 4</b> 由四个子图拼成，英文小字密集，手机上只看得到结构；图注已引导读者看结论，细节留给原文。
+        <strong>图 2 的手机端风险</strong><br>
+        该图英文小字密集（原图 2048px 宽，已压到 1280px），手机上只看得到结构；图注已引导读者看结论，细节留给原文。
       </div>
     </div>
     <div class="card">
