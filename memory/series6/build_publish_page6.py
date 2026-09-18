@@ -197,7 +197,8 @@ PAGE = """<!DOCTYPE html>
       <p style="margin:0;font-size:12.5px;line-height:1.85;color:#5A6474;">
         · <b>标题</b> → <code>Agent Memory 技术综述：有界召回篇</code><br>
         · <b>阅读原文</b> → <code>github.com/AlexStocks/agent-memory</code><br>
-        · <b>话题标签</b> → <code>#AgentMemory技术综述</code>（建议前五篇也补挂）
+        · <b>话题标签</b> → <code>#AgentMemory技术综述</code>（建议前五篇也补挂）<br>
+        · <b>同期论文译文</b> → 仓库 <code>starting/第06篇_有界召回篇/</code>（S/A 级七篇，正文 5.4 节口播可提）
       </p>
     </div>
   </div>
