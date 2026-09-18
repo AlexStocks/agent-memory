@@ -38,3 +38,71 @@ ArXiv 论文研究工作日志。每条记录格式：论文发表日期 + 标�
 - **Authors**: Yi Ting Shen, Kentaroh Toyoda, Alex Leung（Vulcan Research, AIFT，新加坡）
 - **Link**: https://arxiv.org/abs/2609.08258
 - **Summary**: 首次实测「软撤销」（把被矛盾的事实标记为失效并保留，即 Selective Memory 的「归档而非删除」）在检索时是否真被执行。五个主流系统（Graphiti、Zep、mem0、langmem、cognee）× 9 场景 × 9 模型 × 6 种防御条件。**结论：没有任何系统默认强制执行撤销**；两款把已撤销记录 81/81 返回且每次排在替代项之上，导致 agent 在 43.1%（699/1,620）的试验中采取不安全动作。三种失效形态：撤销未记录 / 记录但对调用方隐瞒 / 记录可见但检索时不执行。**关键补充：仅提示词加固几乎无效（43.1% → 37.2%），存储级过滤才彻底消除（0/1,620）；失效点在检索而非存储（同一数据只改一个检索标志，81 个单元中 39 个从安全翻成不安全且从未反向）；与模型能力无相关性（九款 15.0%—60.0%，最抗的是最快的非推理模型）。** 给「归档而非删除」补上必备条件：归档之后必须在检索层加一道有效性闸门。代码：https://github.com/VulcanLab/Memory-Rebirth-Attack
+
+---
+
+## 第 6 篇《有界召回篇》同期论文核查（2026-09-18）
+
+> 核查报告全表见 `memory/series6/第6篇_同期论文核查_2026-09-18.md`。以下为 S / A 级论文的正式归档条目。
+
+### [2026-08-21] Utility Under Attack: Agent Memory Poisoning and the Limits of Content Screening and Provenance Ranking
+- **Authors**: Arulnidhi Karunanidhi
+- **Link**: https://arxiv.org/abs/2608.21230
+- **Summary**: 与 WMT 同日发表，正面对上 P-1 的投毒实验。用朴素措辞（无指令、无触发器、无检索器优化）的假陈述投毒 **1.2%** 的 LongMemEval 语料，准确率 0.850 → 0.300。四阶段写时筛查对间接 prompt injection 有 0.832 recall、只误标 1.5% 含触发词的良性文本，但 **360 条投毒记忆一条都没拒掉（0/360）**。溯源加权：出厂权重与不设防统计不可区分（p=0.80）；强权重只能靠排斥不可信内容换效用（混合溯源语料 0.3167 → 0.7000），但当答案证据本身不可信时，证据召回掉到 0、准确率 0.0417。结论：**加性溯源惩罚没有可用工作点，应改为检索侧的有界占用约束（bounded occupancy）**。给 P-1「AF 压到 0.965 但未归零」提供了结构性解释。边界：单作者；投毒为朴素虚假陈述，不能外推为「内容筛查对对抗性投毒无效」。
+
+### [2026-07-20] Retain or Consolidate? Budget-Dependent Operator Selection for Language Agent Memory
+- **Authors**: Qingcan Kang, Mingyang Liu, Shixiong Kai 等 8 人
+- **Link**: https://arxiv.org/abs/2607.17545（v2）
+- **Summary**: 把「记忆该不该压」从启发式打分升级为**预算依赖的算子选择**：保留 vs 整合，整合再选 Merge / Abstract / Rewrite。核心理论是把每个算子的效用分解为对「保留会漏掉的证据」的 coverage effect 与对「已经装得下的原始证据」的**带符号** replacement effect，两者的平衡解释了为何偏好动作随相对预算压力翻转。实现为 OAS，从预生成特征估计动作效用并做 held-out 危害校准。LongMemEval 紧凑预算下整合带来最高 **+48% 绝对准确率**，松预算下保留更优；LoCoMo 在更小预算复现同一 crossover（与其证据更短一致）；需要压缩时跨笔记抽象与合并普遍优于局部重写。**是对 P-1 固定系数（0.75 / 0.30）的直接否定：不存在全局最优策略。**
+
+### [2026-09-08] What Eviction Destroys: A Restore-Counterfactual Audit of Forgetting in Agent Memory
+- **Authors**: Chen Shen
+- **Link**: https://arxiv.org/abs/2609.08279
+- **Summary**: 提出 **restore counterfactual**——逐题配对干预，把该题的 gold evidence 在读取时重新装回上下文并重跑同一 reader；结合正确性变化与「驱逐后证据是否仍在」把每个可答错题分为可恢复 / 不可逆 / 残余三类。在 LongMemEval-S 上评 FIFO / random / 冗余感知 / LLM 重要性四种驱逐策略 × 3 预算 × 2 检索口径。**80k 预算 top-k 检索下，被恢复纠正的错误里不可逆占比 0.67—0.73（LLM 重要性 0.60）；8k 预算下四种策略全部达到 1.00。** 另指出预算-准确率结果在检索口径不同时不可直接比较。**给第 6 篇 6.4 节「证据下限」提供量化刻度：压缩真正不可逆的比例是有方法可测的。** 边界：单作者；匹配准确率分析分辨率 1.2—6 pp，「未检测到差异」≠「无差异」。
+
+### [2026-08-13] RippleMem: From Isolated Retrieval to Associative Recollection for Long-Term Agent Memory
+- **Authors**: Jingbo Ji, Lingyi Li, Xilong Cheng 等 7 人
+- **Link**: https://arxiv.org/abs/2608.13334
+- **Summary**: **StructMem 的正面竞品**，痛点陈述几乎一致：全上下文要噪声搜索、扁平检索返回孤立不完整记录、图记忆构建贵且压掉丰富事件语境。RippleMem 把交互历史存成 cue-rich episodic memory units 并组织为事件中心图，查询时先用混合线索召回 anchors，再沿语义与结构关联**扩展补全缺失证据**——已被召回的记忆既是答案上下文也是补全线索。LoCoMo 与 LongMemEval-S 上整体最优，LLM-as-Judge 准确率 LoCoMo +3.95%、LongMemEval-S 最多 +11.87%，**图构建成本降约 30×**。与 P-2 的关键差异：StructMem 的跨事件整合是离线周期性批处理、种子选择对查询是盲的；RippleMem 是查询时在线联想补全。
+
+### [2026-08-03] MemSIF: From Structured Interactions to Dual-Track Fact Memory for LLM Agents
+- **Authors**: YuFei Luo, Xiucheng Xu, Zhen Yang
+- **Link**: https://arxiv.org/abs/2608.01742（v2）
+- **Summary**: 命名两种长期交互中的失配：**TSM（Temporal-Structural Misalignment，时间邻近不能可靠对齐主题或事件级相关性）**与 **DUM（Delayed Utility Manifestation，写时显著性不能可靠预测未来查询效用）**。DUM 同时打在 P-1 写时打分与 P-2 写时结构上——若写时信号预测不了未来效用，两侧都要打折。解法：Structured Interaction Memory（Topical Segments 保留局部主题连贯 + Event Trajectories 维持跨时事件连续）+ Dual-Track Fact Memory（CoreFact 写时按 schema 固化稳定信息；ActiveFact 按需生成，被多源支持且反复被查询才提升为复用）。LoCoMo 与 LongMemEval-S × 5 基座全部取得最高 Total ACC，比最强基线高 2.29%—8.79%（LoCoMo）/ 2.87%—6.15%（LongMemEval-S）。代码：https://github.com/luoyufeihaha/MemSIF
+
+### [2026-08-17] What Does Context Compression Cost an Agent? Interaction Costs Unrevealed by Task-Completion Metrics
+- **Authors**: Shuyu Liu
+- **Link**: https://arxiv.org/abs/2608.16370
+- **Summary**: **明确引用 Memento（P-3）**。用有界时程（固定 24 轮）工具调用 agent 的受控运行时协议测量「再获取成本」：压缩会让 agent 被迫重新获取被丢弃的状态，而完成度可能统计上毫无变化。六个模型-场景对照中检索调用**全部上升**且几乎解释了全部新增交互，五组通过 Holm 校正；预设 5× 压缩点上完成度变化均不显著；GPT-5.5 最典型：完成度 80% → 85%（p=1.0）而检索从 21.0 涨到 63.9 次（p=.002）。保留干预进一步分离状态数量/类型/内容有效性：用语义无关内容替换保留状态使检索 +57%（p<.001）而完成度无显著变化。ALFWorld 上滑窗压缩没有检索激增，说明该特征是环境依赖的。**结论：P-3 报的 7.4 / 15.3 个百分点只是压缩代价的下界。** 边界：单作者。
+
+### [2026-08-29] Selective Forgetting: A Graph-Based Memory Framework for Long-Term LLM Agents
+- **Authors**: Theo Rusu, Sourena Khanzadeh, Manar Alalfi
+- **Link**: https://arxiv.org/abs/2608.28978
+- **Summary**: 直接检验「图记忆是否比扁平检索更强」这一假设。框架把每轮对话抽成带类型节点与属性边，用两跳子图答题，并周期性剪掉「新近度 + 访问频次 + 度中心性 + 时间」加权得分低的节点。**LongMemEval 上，在匹配的候选生成预算（5 个检索根）下，图未超过扁平向量基线**：token F1 0.417 vs 0.468，500 题配对 bootstrap Δ=-0.050（95% CI [-0.085,-0.016]）；差距最大在「需回忆某条助手原话」类，judged correctness 从 0.911 掉到 0.607——把 turn 拆成实体丢掉了这些题依赖的表层形式。**但遗忘模块是成功的**：对 27,021 节点的持久图剪掉 9.8% 节点 / 9.5% 字节，token F1 不变（+0.001，CI [-0.015,+0.016]），judged correctness 仅降 1.6 点（损失上界 3.8 点）。作者自述：单抽取器单基准，结论刻画该抽取式流水线而非图结构记忆整体。代码：https://github.com/skhanzad/Selective-Amnesia
+
+---
+
+### 第 6 篇核查中值得关注的其余同期论文（一行式）
+
+| 日期 | 编号 | 标题 | 相关性 |
+|---|---|---|---|
+| 2026-06-14 | [2606.15903](https://arxiv.org/abs/2606.15903) | Control-Plane Placement Shapes Forgetting | 13 配置/385 对抗案例；**生产故障主要是遗忘故障，而现有基准只测召回**；发布 ForgetEval |
+| 2026-06-18 | [2606.20047](https://arxiv.org/abs/2606.20047) | PACMS: Submodular Context Selection | 把「留谁」做成有理论保证的子模最大化，统一「对话轮 + 记忆条目 + 工具输出」为一个候选池 |
+| 2026-06-23 | [2606.25115](https://arxiv.org/abs/2606.25115) | Forget to Improve: Budget-Curated Memory | **net-value-per-byte** 单一标尺统治 KEEP/SHARE/TRUST；端侧 2.7× 内存↓、注入成功率 0.75→0 |
+| 2026-05-29 | [2607.22562](https://arxiv.org/abs/2607.22562) | SF-AMS: Strategic Forgetting for Structured Memory | 用**使用冗余度 + 时间信号**而非落选次数更新重要性；LoCoMo 多跳 +9.65 F1 |
+| 2026-07-31 | [2607.29167](https://arxiv.org/abs/2607.29167) | Memory Provenance Laundering | **溯源洗白**：整合改写会把外部观察变成「看似用户历史」；脆弱整合记忆 ASR 达 1.000 |
+| 2026-08-31 | [2608.30177](https://arxiv.org/abs/2608.30177) | Understanding Stage-Wise Utility-Risk Trade-offs | MemGauge：写入准入 / 管理策略 / 检索暴露三阶段分别扰动 × 11 LLM |
+| 2026-08-12 | [2608.11775](https://arxiv.org/abs/2608.11775) | The Sleeping Agent: What Gist Compression Loses | gist 压缩的**任务类型交互**；时间题塌陷源于摘要丢日期，一句提示词把时间保留率 3.05%→62.39% |
+| 2026-08-08 | [2608.07855](https://arxiv.org/abs/2608.07855) | CommitKV: Lifecycle-Aware KV Cache Compression | 区分**「暂时休眠」与「似乎已无用」**——P-1「落选 ≠ 无用」在 KV 层的同构 |
+| 2026-08-16 | [2608.15797](https://arxiv.org/abs/2608.15797) | KV-Rescue | 驱逐损失是**信息缺口而非能力缺口**（oracle 回收 79%），B=64 下回收 87% |
+| 2026-08-21 | [2608.21690](https://arxiv.org/abs/2608.21690) | Context as an Environment (Scroll) | append-only Event Log + 持久 Python kernel，驱逐 span 可精确回跳；LongMemEval_S 94.8%。**PC 最该对标的形态** |
+| 2026-06-22 | [2606.23525](https://arxiv.org/abs/2606.23525) | Self-Compacting Language Model Agents | tool + 轻量 rubric，**免训练**让模型自己决定何时压；token 成本降 30—70% |
+| 2026-06-29 | [2606.30005](https://arxiv.org/abs/2606.30005) | LLM Agents Are Latent Context Managers (VISTA) | 前沿模型**对自身上下文本体感觉盲**——对 P-3「模型自评语义边界」的前提性质疑 |
+| 2026-06-13 | [2606.15405](https://arxiv.org/abs/2606.15405) | T-Mem: Memory That Anticipates, Not Archives | 区分 descriptive（共享表层特征）与 associative（仅潜在语义弧相连）两类可达性 |
+| 2026-05-15 | [2605.15759](https://arxiv.org/abs/2605.15759) | DimMem: Dimensional Structuring | typed 原子自包含记忆单元；LoCoMo 81.43 / LongMemEval-S 78.20，per-query token −24% |
+| 2026-08-17 | [2608.17053](https://arxiv.org/abs/2608.17053) | Memory Is Communication | 把记忆预算与通信预算放进同一可达域，定义 **remembering–signaling frontier** |
+| 2026-04-17 | [2604.16548](https://arxiv.org/abs/2604.16548) | A Survey on Long-Term Memory Security | 记忆生命周期框架：6 阶段 × 4 目标，**第 7 篇（治理/溯源/审计）的现成骨架** |
+| 2026-09-01 | [2609.00551](https://arxiv.org/abs/2609.00551) | EM²Mem: Event-Centric Multimodal Memory | 事件锚定多模态记忆，cite StructMem；来自 zjunlp/LightMem 家族 |
+| 2026-05-27 | [2605.28773](https://arxiv.org/abs/2605.28773) | Rethinking Memory as Continuously Evolving Connectivity (FluxMem) | 记忆视为持续演化的异质图，三阶段拓扑精炼 |
+| 2026-06-10 | [2606.11680](https://arxiv.org/abs/2606.11680) | HORMA: Organize then Retrieve | 文件系统式层级 + 摘要实体链接回原始轨迹；长对话 token ≤ 基线 22.17% |
+| 2026-08-30 | [2608.29606](https://arxiv.org/abs/2608.29606) | Agent Zero Memory | provenance-aware 三套并行记忆，不选单一组织路线 |
